@@ -1,0 +1,12 @@
+.obsidian/workspace.json
+.obsidian/workspaces.json
+.obsidian/publish.json
+.obsidian/app.json
+.obsidian/daily-notes.json
+.obsidian/templates.json
+
+.obsidian/plugins/
+
+.obsidian/cache/
+
+*.sync-conflict-*
