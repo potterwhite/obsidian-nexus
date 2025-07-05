@@ -50,7 +50,7 @@ if (file && file.file && file.file.path) {
 
 **请使用templater插入模板TimeBlock-Insert-Templater.md**
 
-- [ ] Task description (start:: ) (end:: ) (task:: [[Task-UUID-Name]]) (task_name:: [[Task-Name]])
+- [ ] Task description (start:: ) (end:: ) (task_uuid:: [[Task-UUID-Name]]) (task_name:: [[Task-Name]])
 
 ---
 

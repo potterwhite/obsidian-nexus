@@ -25,6 +25,7 @@ tags: journal/task
 ```dataviewjs
 const taskId = dv.current().task_uuid;
 let rows = [];
+let total_duration = 0;
 
 for (let page of dv.pages('#journal/daily')) {
     if (!page.file.tasks) continue;
@@ -37,6 +38,7 @@ for (let page of dv.pages('#journal/daily')) {
             let start = new Date("1970-01-01T" + t.start.padStart(5, '0'));
             let end = new Date("1970-01-01T" + t.end.padStart(5, '0'));
             let duration = Math.round((end - start) / (1000 * 60));
+            total_duration += duration;
             rows.push([
                 "[[" + page.file.name + "]]",
                 t.date || "",
@@ -49,5 +51,5 @@ for (let page of dv.pages('#journal/daily')) {
 }
 
 dv.table(["日记", "日期", "开始", "结束", "时长"], rows);
-
+dv.paragraph(`**总耗时**: ${total_duration} 分钟`);
 ```
