@@ -1,10 +1,11 @@
 ---
 tags: journal/daily
 date: <% tp.date.now("MMMM D, YYYY") %>
+day_of_week: <% tp.date.now("dddd") %>
 project: [[Area-Journal]]
 ---
 
-# Daily_Log - <% tp.file.title %>
+# Daily_Log - <% tp.file.title %> (<% tp.date.now("dddd") %>)
 
 ## ✅ 今日目标 (Today's Goals)
 ```dataviewjs
@@ -60,21 +61,47 @@ if (file && file.file && file.file.path) {
 const fileDateStr = window.moment().format("YYYY-MM-DD");
 const tasks = dv.current().file.tasks.where(t => t.start && t.end);
 
+// 1. 初始化一个变量来存储总分钟数
+let totalMinutes = 0;
+
 function padTime(t) {
   let [h, m] = t.split(":");
   return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
 }
 
+// 先创建表格
 dv.table(["任务", "开始时间", "结束时间", "时长", "分类", "项目"],
   tasks.map(t => {
     let start = padTime(t.start);
     let end = padTime(t.end);
     let startTime = new Date(fileDateStr + "T" + start);
     let endTime = new Date(fileDateStr + "T" + end);
-    let duration = Math.round((endTime - startTime) / (1000 * 60));
-    return [t.text, start, end, duration + " 分钟", t.category, t.task];
+    let durationInMinutes = Math.round((endTime - startTime) / (1000 * 60));
+
+    // 2. 将当前任务的时长累加到总数中
+    totalMinutes += durationInMinutes;
+
+    return [t.text, start, end, durationInMinutes + " 分钟", t.category, t.task];
   })
 );
+
+// 3. 在表格下方显示总耗时
+if (totalMinutes > 0) {
+  // 将总分钟数转换为 "X小时 Y分钟" 的格式
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  let totalDurationStr = "";
+  if (hours > 0) {
+    totalDurationStr += `${hours} 小时 `;
+  }
+  if (minutes > 0) {
+    totalDurationStr += `${minutes} 分钟`;
+  }
+
+  // 使用 dv.paragraph 创建一个段落来显示总计
+  dv.paragraph(`**总耗时：${totalDurationStr.trim()}** (共 ${totalMinutes} 分钟)`);
+}
 ```
 
 ---
