@@ -1,0 +1,46 @@
+{
+  "command_timeout": 5,
+  "templates_folder": "",
+  "templates_pairs": [
+    [
+      "",
+      ""
+    ]
+  ],
+  "trigger_on_file_creation": false,
+  "auto_jump_to_cursor": false,
+  "enable_system_commands": false,
+  "shell_path": "",
+  "user_scripts_folder": "3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Templater/",
+  "enable_folder_templates": true,
+  "folder_templates": [
+    {
+      "folder": "",
+      "template": ""
+    }
+  ],
+  "enable_file_templates": false,
+  "file_templates": [
+    {
+      "regex": ".*",
+      "template": ""
+    }
+  ],
+  "syntax_highlighting": true,
+  "syntax_highlighting_mobile": true,
+  "enabled_templates_hotkeys": [
+    "3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/DailyNote-Template.md",
+    "3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Weekly-Review-Template.md",
+    "3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Monthly-Review-Template.md",
+    "3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Yearly-Review-Template.md",
+    "3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Task-Template.md",
+    "3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Project-Template.md",
+    "3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/TechnicalConclusion-Template.md",
+    "3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Templater/TimeBlock-Insert-Templater.md",
+    "3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Templater/update-task-time.md"
+  ],
+  "startup_templates": [
+    ""
+  ],
+  "intellisense_render": 1
+}
