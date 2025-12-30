@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.3.0](https://github.com/potterwhite/obsidian-nexus/compare/v0.2.2...v0.3.0) (2025-12-30)
+
+
+### Features
+
+* **template:** add hour/minute formatting to project summary table ([c5086bd](https://github.com/potterwhite/obsidian-nexus/commit/c5086bde576c48b9ed4e03566fdc1490eb31ba0c))
+* trigger first release ([d2a6de0](https://github.com/potterwhite/obsidian-nexus/commit/d2a6de0e86f3cdc8cabd5cc19e3ede543dd4fd58))
+
 ## [0.2.2] - 2025-12-30
 ### ✨ Added
 - **Week Summary Template**: Enhanced the "Project Total Duration" table. It now displays a breakdown of hours and minutes alongside the total minutes (e.g., `150 minutes (2h 30m)`) for better readability.
