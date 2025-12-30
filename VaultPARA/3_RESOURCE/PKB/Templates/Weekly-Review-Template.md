@@ -197,7 +197,20 @@ for (let [project, total] of Object.entries(projectTotals)) {
 }
 
 projectRows.sort((a, b) => b[1] - a[1]);
-let formattedProjectRows = projectRows.map(row => [row[0], row[1] + " 分钟"]);
+// 修改开始：增加小时显示逻辑
+let formattedProjectRows = projectRows.map(row => {
+    let total = row[1];
+    let h = Math.floor(total / 60);
+    let m = total % 60;
+
+    // 如果超过1小时，显示 "总分钟 (X小时 Y分钟)"，否则只显示分钟
+    let timeString = (h > 0)
+        ? `${total} 分钟 (${h}小时 ${m}分钟)`
+        : `${total} 分钟`;
+
+    return [row[0], timeString];
+});
+// 修改结束
 
 dv.header(3, "📊 项目总耗时");
 if (formattedProjectRows.length > 0) {

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.2.2] - 2025-12-30
+### ✨ Added
+- **Week Summary Template**: Enhanced the "Project Total Duration" table. It now displays a breakdown of hours and minutes alongside the total minutes (e.g., `150 minutes (2h 30m)`) for better readability.
+
+### ⚡ Improved
+- Updated the DataviewJS script to conditionally format time strings: tasks under 60 minutes remain concise, while longer tasks automatically show the hour conversion.
+
+
 ## [0.2.1] - 2025-12-30
 - Remove "Yearly-Rank-By-Day.md" forever
 - Add shortcut for Yearly-Review-Markdown Insert in README
@@ -61,3 +69,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.2.0]: https://github.com/potterwhite/obsidian-nexus/releases/tag/v0.2.0
 
 [0.2.1]: https://github.com/potterwhite/obsidian-nexus/releases/tag/v0.2.1
+
+[0.2.2]: https://github.com/potterwhite/obsidian-nexus/releases/tag/v0.2.2
