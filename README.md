@@ -88,6 +88,7 @@ The core logic of this vault is to first create a file, then insert a template i
 | **Reviews** | | |
 | Templater: Insert Weekly Review | `Alt` + `W` | `Weekly-Review-Template.md` |
 | Templater: Insert Monthly Review | `Alt` + `M` | `Monthly-Review-Template.md` |
+| Templater: Insert Yearly Review | `Alt` + `Y` | `Yearly-Review-Template.md` |
 
 ### 🐞 Known Issues & Roadmap
 
