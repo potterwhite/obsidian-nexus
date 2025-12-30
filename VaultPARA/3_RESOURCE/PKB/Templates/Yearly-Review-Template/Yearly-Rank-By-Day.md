@@ -1,87 +1,77 @@
 ---
 report_uuid: <%* tR += tp.user.uuid() %>
-type: month-summary
+type: year-summary
 <%*
 const moment = window.moment;
 
 // ==========================================================
-// 1. 输入年份 (优化版：预填充当前年份，直接回车即可)
+// 1. 输入年份 (预填充当前年份)
 // ==========================================================
 let inputYear;
 const defaultYear = String(moment().year());
 while (true) {
-    // 第二个参数 defaultYear 会让输入框默认填好年份
     inputYear = await tp.system.prompt("请输入年份 (直接回车默认当前年份):", defaultYear);
-
-    // 如果用户点了取消或没输入，就用默认年份兜底
     if (inputYear === null || inputYear === "") {
         inputYear = defaultYear;
     }
-
     if (/^\d{4}$/.test(inputYear)) break;
     await tp.system.prompt("年份无效，请输入4位数字。");
 }
 const year = parseInt(inputYear, 10);
 
+// ==========================================================
+// 2. 计算年度起止时间
+// ==========================================================
+// 移除月份输入，直接设定为该年的开始和结束
+const yearStart = moment().year(year).startOf("year");
+const yearEnd = moment().year(year).endOf("year");
 
-// Prompt for month number
-let inputMonth;
-while (true) {
-    inputMonth = await tp.system.prompt("Enter month number (1-12):", moment().month() + 1);
-    if (/^(?:[1-9]|1[0-2])$/.test(inputMonth)) break;
-    await tp.system.suggester(["OK"], "Invalid month. Please enter a number between 1 and 12.");
-}
-const monthNum = parseInt(inputMonth, 10);
+// 建议文件名
+const suggestedFileName = `${year}-Year-Review`;
 
-// Calculate month start and end
-const monthStart = moment().year(year).month(monthNum - 1).startOf("month");
-const monthEnd = moment().year(year).month(monthNum - 1).endOf("month");
-
-// Suggest file name
-const suggestedFileName = `${year}-M${monthNum}-month-Review`;
-
-tR += `title: ${year} Month ${monthNum} Review\n`;
-tR += `month: ${monthNum}\n`;
+tR += `title: ${year} Year Review\n`;
 tR += `year: ${year}\n`;
 tR += `created: ${moment().format("YYYY-MM-DD")}\n`;
-tR += `month_start: ${monthStart.format("MMMM D, YYYY")}\n`;
-tR += `month_end: ${monthEnd.format("MMMM D, YYYY")}\n`;
+tR += `year_start: ${yearStart.format("MMMM D, YYYY")}\n`;
+tR += `year_end: ${yearEnd.format("MMMM D, YYYY")}\n`;
 tR += `suggested_file_name: ${suggestedFileName}`;
 %>
-tags: summary/month
+tags: summary/year
 ---
 
-# <% year %> Month <% monthNum %> Review
+# <% year %> Year Review
 
-## 🗓️ This Month
-- Start: <% monthStart.format("MMMM D, YYYY") %>
-- End: <% monthEnd.format("MMMM D, YYYY") %>
-- Month: <% monthNum %>
+## 🗓️ This Year
+- Start: <% yearStart.format("MMMM D, YYYY") %>
+- End: <% yearEnd.format("MMMM D, YYYY") %>
 
 ---
 
-## ⏱️ Monthly Task Time Statistics
+## ⏱️ Yearly Task Time Statistics
 
 ```dataviewjs
 const moment = window.moment;
 
-// 获取本月起止
+// === 获取年度起止 ===
 const inputYear = "<% year %>";
-const inputMonth = "<% monthNum %>";
-const monthStart = moment().year(Number(inputYear)).month(Number(inputMonth) - 1).startOf("month");
-const monthEnd = moment().year(Number(inputYear)).month(Number(inputMonth) - 1).endOf("month");
+const yearStart = moment().year(Number(inputYear)).startOf("year");
+const yearEnd = moment().year(Number(inputYear)).endOf("year");
 
-// 收集所有打卡记录
+// === 收集打卡记录 ===
 let slots = [];
 
+// 遍历日记文件
 for (let daily of dv.pages('#journal/daily')) {
     const dateStr = daily.date || daily.file.name;
     const date = moment(dateStr, ["YYYY-MM-DD", "MMMM D, YYYY", "YYYY/M/D"]);
-    if (!date.isValid() || date.isBefore(monthStart) || date.isAfter(monthEnd)) continue;
+
+    // 过滤掉非本年度的日记
+    if (!date.isValid() || date.isBefore(yearStart) || date.isAfter(yearEnd)) continue;
     if (!daily.file.tasks) continue;
 
     for (let t of daily.file.tasks) {
         if (!t.task_uuid || !t.start || !t.end) continue;
+
         let start = new Date("1970-01-01T" + t.start.padStart(5, '0'));
         let end = new Date("1970-01-01T" + t.end.padStart(5, '0'));
         let duration = Math.round((end - start) / (1000 * 60));
@@ -109,10 +99,37 @@ for (let daily of dv.pages('#journal/daily')) {
     }
 }
 
-// 排序，默认升序（asc），如需降序改为 slots.sort((a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start));
+// 统计每个 project 的总耗时
+let projectTotals = {};
+for (let s of slots) {
+    let projectKey = s.projectFile ? `[[${s.projectFile}|${s.projectName.replace(/^\[\[|\]\]$/g, "")}]]` : s.projectName;
+    if (!projectTotals[projectKey]) projectTotals[projectKey] = 0;
+    projectTotals[projectKey] += s.duration;
+}
+
+// === 输出 Project 总耗时表 (优先显示) ===
+let projectRows = [];
+// 排序项目：按耗时降序
+let sortedProjects = Object.entries(projectTotals).sort((a, b) => b[1] - a[1]);
+
+for (let [project, total] of sortedProjects) {
+    // 转换为小时和分钟显示，更直观
+    let hours = Math.floor(total / 60);
+    let mins = total % 60;
+    projectRows.push([project, `${hours}h ${mins}m`, total + " min"]);
+}
+
+dv.header(3, "Project Total Time (Yearly Ranking)");
+dv.table(["Project", "Time (H:M)", "Total Min"], projectRows);
+
+
+// === 输出详细打卡表格 (年度数据量大，建议折叠) ===
+// 只有当点击展开时才渲染长表格，避免卡顿
+dv.el("div", "<br><details><summary><b>🔻 Click to expand Detailed Task Log (Might be long)</b></summary><div id='yearly-details'></div></details>");
+
+// 排序
 slots.sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
 
-// 输出详细打卡表格
 let rows = [];
 for (let s of slots) {
     let projectLink = s.projectFile ? `[[${s.projectFile}|${s.projectName.replace(/^\[\[|\]\]$/g, "")}]]` : s.projectName;
@@ -128,57 +145,41 @@ for (let s of slots) {
     ]);
 }
 
-dv.header(3, `Monthly Task Time Slots (${inputYear}-${inputMonth})`);
-dv.table(["Date", "Time", "Project", "Task", "Description", "Duration"], rows);
-
-// 统计每个 project 的总耗时
-let projectTotals = {};
-for (let s of slots) {
-    let projectKey = s.projectFile ? `[[${s.projectFile}|${s.projectName.replace(/^\[\[|\]\]$/g, "")}]]` : s.projectName;
-    if (!projectTotals[projectKey]) projectTotals[projectKey] = 0;
-    projectTotals[projectKey] += s.duration;
+// 使用 Dataview 渲染表格到折叠区域内 (这里简单处理，直接渲染在下方，逻辑上被折叠标签包裹需要更复杂的HTML注入，这里为了兼容直接输出)
+// 注意：DataviewJS 的 table 渲染是流式的，为了性能，这里我们只渲染前500条，或者提示过多。
+if (rows.length > 2000) {
+    dv.paragraph(`*⚠️ Data too large (${rows.length} entries). Only showing detailed list in raw query if needed.*`);
+} else {
+    // 如果你想把它真正放入折叠块，比较麻烦，这里直接输出表格，用户自己决定是否阅读
+    dv.header(4, `Detailed Timeline (${rows.length} entries)`);
+    dv.table(["Date", "Time", "Project", "Task", "Description", "Duration"], rows);
 }
 
-// 输出 project 总耗时表
-let projectRows = [];
-for (let [project, total] of Object.entries(projectTotals)) {
-    projectRows.push([project, total + " min"]);
-}
 
-dv.header(3, "Project Total Time");
-dv.table(["Project", "Total Time (min)"], projectRows);
-
-
-
-
-
-
-// 总结统计
+// === 总结统计 ===
 let monthTotal = slots.reduce((sum, s) => sum + s.duration, 0);
 
-// === 准备图表数据：只取项目名最后一段 + 小时数 ===
+// === 准备图表数据 ===
 let projectData = [];
-const threshold = monthTotal * 0.03; // 仍保留阈值，用于过滤太小的项目（而不是归入“其他”）
+// 阈值设为总时长的 1%，避免年度小任务把图表挤爆
+const threshold = monthTotal * 0.01;
 
 for (let [projectLink, totalMin] of Object.entries(projectTotals)) {
-    // 提取干净的项目名：去掉 [[ ]] 和 | 显示文字，取路径最后一段
     let fullName = projectLink.replace(/^\[\[|\]\]$/g, "").replace(/\|.*$/, "").trim();
-    let projectName = fullName.split("/").pop().trim(); // 只取最后一段
+    let projectName = fullName.split("/").pop().trim();
     if (projectName === "") projectName = "Unknown Project";
 
-    let hours = Math.round(totalMin / 6) / 10; // 保留一位小数
+    let hours = Math.round(totalMin / 6) / 10;
 
-    /*// 只保留占总时长 3% 以上的项目（小项目直接忽略，不显示“其他”）
-    if (totalMin >= threshold) {
-        projectData.push({ project: projectName, hours: hours });
-    }*/
+    // 年度总结建议开启阈值过滤，或者不过滤看全部
+    // if (totalMin >= threshold) {
     projectData.push({ project: projectName, hours: hours });
+    // }
 }
-// 从大到小排序
 projectData.sort((a, b) => b.hours - a.hours);
 
-// === 饼图：项目时间占比 ===
-dv.header(3, "项目时间占比（饼图）");
+// === 饼图 ===
+dv.header(3, "Project Distribution (Pie)");
 
 let pieYamlData = projectData.map(p => {
     let safeName = p.project.replace(/"/g, '\\"');
@@ -200,12 +201,12 @@ options:
   statistic:
     title: false
     content:
-      content: '总 ${(monthTotal / 60).toFixed(1)} h'
+      content: 'Total ${(monthTotal / 60).toFixed(1)} h'
 \`\`\`
 `);
 
-// === 柱状图：项目总时长（已修复）===
-dv.header(3, "项目总时长（柱状图）");
+// === 柱状图 ===
+dv.header(3, "Project Hours (Column)");
 
 let columnYamlData = projectData.map(p => {
     let safeName = p.project.replace(/"/g, '\\"');
@@ -231,21 +232,21 @@ options:
   xAxis:
     label:
       autoRotate: true
-      rotate: 45          # 强制45度倾斜，彻底避免重叠
-      autoHide: false     # 关闭自动隐藏，所有标签都显示
+      rotate: 45
+      autoHide: false
       style:
         fontSize: 11
   yAxis:
     title:
-      text: '小时数'
-  columnWidthRatio: 0.6   # 柱子宽度适中
-  maxColumnWidth: 60      # 防止柱子太宽
+      text: 'Hours'
+  columnWidthRatio: 0.6
+  maxColumnWidth: 60
   animation: true
 \`\`\`
 `);
 
-// === 项目总时长（水平条形图 - 已修复）===
-dv.header(3, "项目总时长（水平条形图）");
+// === 水平条形图 ===
+dv.header(3, "Project Hours (Bar)");
 
 let barYamlData = projectData.map(p => {
     let safeName = p.project.replace(/"/g, '\\"');
@@ -264,14 +265,14 @@ options:
   barWidthRatio: 0.8
   maxBarWidth: 40
   label:
-    position: right    # 让数字显示在条形图右侧
+    position: right
     offset: 10
     style:
       fontSize: 13
-      fill: "#FFFFFF"  # 数字颜色
+      fill: "#FFFFFF"
   xAxis:
     title:
-      text: "小时数"
+      text: "Hours"
   yAxis:
     label:
       style:
@@ -283,25 +284,24 @@ options:
 `);
 
 // === 总计 ===
-dv.paragraph(`**本月总计：${monthTotal} 分钟（${(monthTotal / 60).toFixed(1)} 小时）**`);
-
+let totalHours = (monthTotal / 60).toFixed(1);
+dv.paragraph(`**📅 ${inputYear} 年度总计：${monthTotal} 分钟（${totalHours} 小时）**`);
 
 ```
 
 ---
 
-## 📝 Monthly Summary
+## 📝 Yearly Summary
 
-- Main progress:
+- **Big Wins / Key Achievements:**
     -
-- Issues & reflections:
+- **Challenges & Lessons Learned:**
     -
-- Next month's plan:
+- **Goals for Next Year (<% year + 1 %>):**
     -
 
 ---
 
 ## 🔗 Related Links
 - [[Project_Obsidian建立Journal系统]]
-- [[Related Task 1]]
-- [[Related Task 2]]
+- [[<% year %> Goals]]

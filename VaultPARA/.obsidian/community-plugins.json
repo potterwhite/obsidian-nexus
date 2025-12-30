@@ -1,4 +1,11 @@
 [
   "dataview",
-  "templater-obsidian"
+  "templater-obsidian",
+  "better-export-pdf",
+  "obsidian-pandoc",
+  "obsidian-icon-shortcodes",
+  "convert-url-to-iframe",
+  "obsidian-importer",
+  "markwhen",
+  "obsidian-chartsview-plugin"
 ]
