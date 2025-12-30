@@ -2,7 +2,7 @@
 type: project
 created: <% tp.date.now("YYYY-MM-DD") %>
 status: active
-area: [[Your Area Here]]
+area: "[[Your Area Here]]"
 archive: false
 tags: journal/project
 ---
@@ -27,7 +27,7 @@ const tasks = [
   "Data migration",
   "Automation scripting"
 ];
-for (let i = 0; i < tasks.length; i++) { 
+for (let i = 0; i < tasks.length; i++) {
   tR += `- [ ] Task ${i+1}: ${tasks[i]}\n`;
 }
 %>

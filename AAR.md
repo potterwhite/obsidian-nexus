@@ -6,9 +6,9 @@
 
 - **项目名称**: 构建基于 PARA + Journal 的个人知识与任务管理系统 (PKM & GTD System)
 - **核心工具**: Obsidian, Dataview, Templater, Syncthing
-- **时间周期**: 2025 July
+- **时间周期**: 2025 Dec
 - **主要参与者**: PotterWhite, ChatGPT 4o, Gemini 2.5 Pro
-- **版本**: V0.1.0-alpha
+- **版本**: V0.2.0
 
 ---
 

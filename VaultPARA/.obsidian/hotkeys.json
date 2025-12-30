@@ -9,7 +9,7 @@
     }
   ],
   "templater-obsidian:create-new-note-from-template": [],
-  "templater-obsidian:3_RESOURCE/PKB/Templates/DailyNote-Template.md": [
+  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/DailyNote-Template.md": [
     {
       "modifiers": [
         "Alt"
@@ -17,7 +17,7 @@
       "key": "D"
     }
   ],
-  "templater-obsidian:3_RESOURCE/PKB/Templates/Project-Template.md": [
+  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/Project-Template.md": [
     {
       "modifiers": [
         "Alt"
@@ -25,7 +25,7 @@
       "key": "P"
     }
   ],
-  "templater-obsidian:3_RESOURCE/PKB/Templates/Templater/TimeBlock-Insert-Templater.md": [
+  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/Templater/TimeBlock-Insert-Templater.md": [
     {
       "modifiers": [
         "Alt"
@@ -33,7 +33,7 @@
       "key": "I"
     }
   ],
-  "templater-obsidian:3_RESOURCE/PKB/Templates/Task-Template.md": [
+  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/Task-Template.md": [
     {
       "modifiers": [
         "Alt"
@@ -41,7 +41,7 @@
       "key": "T"
     }
   ],
-  "templater-obsidian:3_RESOURCE/PKB/Templates/Templater/update-task-time.md": [
+  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/Templater/update-task-time.md": [
     {
       "modifiers": [
         "Alt"
@@ -49,7 +49,7 @@
       "key": "U"
     }
   ],
-  "templater-obsidian:3_RESOURCE/PKB/Templates/Weekly-Review-Template.md": [
+  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/Weekly-Review-Template.md": [
     {
       "modifiers": [
         "Alt"
@@ -57,12 +57,103 @@
       "key": "W"
     }
   ],
-  "templater-obsidian:3_RESOURCE/PKB/Templates/Monthly-Review-Template.md": [
+  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/Monthly-Review-Template.md": [
     {
       "modifiers": [
         "Alt"
       ],
       "key": "M"
+    }
+  ],
+  "markdown:toggle-preview": [],
+  "better-export-pdf:export-current-file-to-pdf": [
+    {
+      "modifiers": [
+        "Mod",
+        "Shift"
+      ],
+      "key": "E"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/DailyNote-Template.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "D"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Weekly-Review-Template.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "W"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Monthly-Review-Template.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "M"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Project-Template.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "P"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Task-Template.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "T"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/TechnicalConclusion-Template.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "C"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Templater/TimeBlock-Insert-Templater.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "I"
+    }
+  ],
+  "editor:toggle-source": [
+    {
+      "modifiers": [
+        "Alt",
+        "Mod"
+      ],
+      "key": "S"
+    }
+  ],
+  "convert-url-to-iframe:url-to-iframe": [
+    {
+      "modifiers": [
+        "Meta"
+      ],
+      "key": "I"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Yearly-Review-Template.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "Y"
     }
   ]
 }
