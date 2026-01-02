@@ -25,15 +25,23 @@ const year = parseInt(inputYear, 10);
 const yearStart = moment().year(year).startOf("year");
 const yearEnd = moment().year(year).endOf("year");
 
+// ==========================================================
+// 3. 输入目标关键词 (动态获取)
+// ==========================================================
+// 默认值设为 company，用户可以直接回车
+let companyInput = await tp.system.prompt("请输入要统计的项目/公司关键词 (例如 Company):", "");
+if (!companyInput) { companyInput = "company"; } // 防止为空
+
 // 建议文件名
-const suggestedFileName = `${year}-Company-Year-Review`;
+const suggestedFileName = `${year}-${companyInput}-Review`;
 
 tR += `title: ${year} Company Year Review\n`;
 tR += `year: ${year}\n`;
 tR += `created: ${moment().format("YYYY-MM-DD")}\n`;
 tR += `year_start: ${yearStart.format("MMMM D, YYYY")}\n`;
 tR += `year_end: ${yearEnd.format("MMMM D, YYYY")}\n`;
-tR += `suggested_file_name: ${suggestedFileName}`;
+tR += `suggested_file_name: ${suggestedFileName}\n`;
+tR += `target_keyword: ${companyInput}`;
 %>
 tags: summary/year
 ---
@@ -56,10 +64,16 @@ const yearStart = moment().year(Number(inputYear)).startOf("year");
 const yearEnd = moment().year(Number(inputYear)).endOf("year");
 
 // =========================================================
-// ★★★ 1. 设置过滤配置 ★★★
+// ★★★ 1. 设置过滤配置 (动态读取) ★★★
 // =========================================================
-// 在这里输入你要过滤的关键词，不区分大小写
-const targetKeywords = ["Company"];
+// 从当前笔记的 YAML 属性 'target_keyword' 中读取
+// 如果属性里写的是 "Company, Other"，会自动用逗号分割成数组
+let keywordStr = dv.current().target_keyword || "Company";
+const targetKeywords = String(keywordStr).split(",").map(k => k.trim());
+
+// 打印一下，方便你在控制台确认当前搜的是谁
+console.log(`🎯 当前目标关键词: ${JSON.stringify(targetKeywords)}`);
+
 // 如果想显示所有项目（不过滤），把下面这行设为 false
 const enableFilter = true;
 
