@@ -58,7 +58,7 @@ const yearEnd = moment().year(Number(inputYear)).endOf("year");
 // ★★★ 1. 设置过滤配置 ★★★
 // =========================================================
 // 在这里输入你要过滤的关键词，不区分大小写
-const targetKeywords = ["company"];
+const targetKeywords = ["Company"];
 // 如果想显示所有项目（不过滤），把下面这行设为 false
 const enableFilter = true;
 
@@ -87,35 +87,39 @@ for (let daily of dv.pages('#journal/daily')) {
         // 获取任务关联的项目信息
         let taskPage = dv.pages().where(p => p.task_uuid === t.task_uuid).first();
         let taskName = taskPage?.task_name || taskPage?.file?.name || t.text;
-        let rawProjectName = taskPage?.project ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project) : "Unknown Project";
+		let rawProjectName = taskPage?.project ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project) : "Unknown Project";
         let projectFile = null;
 
-        // 解析项目文件名
-        if (typeof rawProjectName === "string" && rawProjectName.startsWith("[[")) {
-            projectFile = rawProjectName.replace(/^\[\[|\]\]$/g, "").split("|")[0];
+        // 解析项目文件名 (修正版：支持 Link 对象和字符串)
+        if (rawProjectName) {
+            if (rawProjectName.path) {
+                // 情况A：它是 Link 对象
+                projectFile = rawProjectName.path;
+                // 修正显示名称，去掉路径和后缀
+                rawProjectName = rawProjectName.display || rawProjectName.path.split("/").pop().replace(".md", "");
+            } else if (typeof rawProjectName === "string" && rawProjectName.startsWith("[[")) {
+                // 情况B：它是纯文本字符串
+                projectFile = rawProjectName.replace(/^\[\[|\]\]$/g, "").split("|")[0];
+            }
         }
 
-        // --- 🛡️ 过滤逻辑开始 ---
+        // --- 🛡️ 过滤逻辑开始 (强壮版) ---
         if (enableFilter) {
-            // 1. 必须有关联的项目文件
             if (!projectFile) continue;
-
-            // 2. 读取项目文件的 Frontmatter
             let projectPage = dv.page(projectFile);
-            if (!projectPage) continue; // 找不到项目文件
+            if (!projectPage) continue;
 
-            // 3. 读取 Area 字段 (兼容数组、链接、文本)
             let areaVal = projectPage.area;
-            if (!areaVal) continue; // 没有 area 字段
+            if (!areaVal) continue;
 
-            // 将 area 内容转为统一的小写字符串用于比对
-            // 如果 area 是一个列表，String() 会变成 "link1, link2"
-            let areaStr = String(areaVal).toLowerCase();
+            // 核心修改：无论 area 是链接、字符串还是数组，都统一转成 JSON 字符串来查
+            // 这样 [[Company]] 会变成 "[[Company]]"，[ "A", "B" ] 会变成 '["A","B"]'
+            // 只要包含关键词就能搜到
+            let areaStr = JSON.stringify(areaVal).toLowerCase();
 
-            // 4. 匹配关键词
             let isMatch = targetKeywords.some(keyword => areaStr.includes(keyword.toLowerCase()));
 
-            if (!isMatch) continue; // 不匹配则跳过
+            if (!isMatch) continue;
         }
         // --- 🛡️ 过滤逻辑结束 ---
 
