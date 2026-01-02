@@ -51,6 +51,7 @@ tags: summary/year
 ```dataviewjs
 const moment = window.moment;
 const inputYear = "<% year %>";
+console.log(`🚀 开始执行年度回顾统计 - 年份: ${inputYear}`);
 const yearStart = moment().year(Number(inputYear)).startOf("year");
 const yearEnd = moment().year(Number(inputYear)).endOf("year");
 
@@ -103,23 +104,39 @@ for (let daily of dv.pages('#journal/daily')) {
             }
         }
 
-        // --- 🛡️ 过滤逻辑开始 (强壮版) ---
+        // --- 🛡️ 过滤逻辑开始 (带调试打印版) ---
         if (enableFilter) {
-            if (!projectFile) continue;
+            // 1. 检查有没有项目文件
+            if (!projectFile) {
+                // console.log(`   🔸 [跳过] 任务无项目文件: ${t.text.substring(0, 20)}...`);
+                continue;
+            }
+
+            // 2. 尝试读取项目笔记
             let projectPage = dv.page(projectFile);
-            if (!projectPage) continue;
+            if (!projectPage) {
+                console.log(`   ❌ [错误] 找不到项目文件: [[${projectFile}]] (请检查文件名是否正确)`);
+                continue;
+            }
 
+            // 3. 读取 Area 字段
             let areaVal = projectPage.area;
-            if (!areaVal) continue;
 
-            // 核心修改：无论 area 是链接、字符串还是数组，都统一转成 JSON 字符串来查
-            // 这样 [[Company]] 会变成 "[[Company]]"，[ "A", "B" ] 会变成 '["A","B"]'
-            // 只要包含关键词就能搜到
-            let areaStr = JSON.stringify(areaVal).toLowerCase();
-
+            // 4. 核心比对逻辑 (转 JSON 字符串比对)
+            // 如果 area 为空，转为空字符串，防止报错
+            let areaStr = areaVal ? JSON.stringify(areaVal).toLowerCase() : "";
             let isMatch = targetKeywords.some(keyword => areaStr.includes(keyword.toLowerCase()));
 
-            if (!isMatch) continue;
+            // ★★★ 打印调试信息 (控制台可见) ★★★
+            if (isMatch) {
+                console.log(`✅ [匹配成功] 项目: [[${projectFile}]] | Area: ${areaStr}`);
+            } else {
+                // 如果你想看哪些被过滤掉了，可以保留下面这行；觉得太吵可以注释掉
+                console.log(`⛔ [匹配失败] 项目: [[${projectFile}]] | Area: ${areaStr} | 你的关键词: ${targetKeywords}`);
+            }
+
+            // 5. 如果没有 area 或者不匹配，则跳过
+            if (!areaVal || !isMatch) continue;
         }
         // --- 🛡️ 过滤逻辑结束 ---
 
