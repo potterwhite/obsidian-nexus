@@ -4,8 +4,19 @@
       "release-type": "simple",
       "package-name": "obsidian-nexus",
       "changelog-path": "CHANGELOG.md",
-      "include-component-in-tag": false
+      "include-component-in-tag": false,
+      "bump-minor-pre-major": true,
+      "changelog-sections": [
+        {"type": "feat", "section": "✨ Added", "hidden": false},
+        {"type": "fix", "section": "🐛 Fixed", "hidden": false},
+        {"type": "perf", "section": "⚡ Improved", "hidden": false},
+        {"type": "revert", "section": "🔙 Reverts", "hidden": false},
+        {"type": "docs", "section": "📚 Documentation", "hidden": true},
+        {"type": "style", "section": "Styles", "hidden": true},
+        {"type": "chore", "section": "Miscellaneous", "hidden": true},
+        {"type": "refactor", "section": "♻️ Refactor", "hidden": true}
+      ]
     }
   },
-  "": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
 }
