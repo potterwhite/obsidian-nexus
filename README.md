@@ -8,7 +8,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/potterwhite/obsidian-nexus/releases"><img src="https://img.shields.io/github/v/release/potterwhite/obsidian-nexus?color=orange&label=version" alt="version"></a>
+  <a href="https://github.com/potterwhite/obsidian-nexus/releases"><img src="https://img.shields.io/badge/version-v0.1.0--alpha-orange"
+  alt="version"></a>
   <a href="https://github.com/potterwhite/obsidian-nexus/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license"></a>
 </p>
 
