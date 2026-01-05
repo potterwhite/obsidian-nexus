@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.5.0](https://github.com/potterwhite/obsidian-nexus/compare/v0.4.0...v0.5.0) (2026-01-05)
+
+
+### ✨ Added
+
+* **templates:** add Technical Conclusion template and normalize YAML lists ([3162688](https://github.com/potterwhite/obsidian-nexus/commit/3162688f865711ad68b9881e26b88a562abe6798))
+
 ## [0.4.0](https://github.com/potterwhite/obsidian-nexus/compare/v0.3.0...v0.4.0) (2026-01-03)
 
 
