@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.5.1](https://github.com/potterwhite/obsidian-nexus/compare/v0.5.0...v0.5.1) (2026-01-05)
+
+
+### 🐛 Fixed
+
+* **docs:** replace hardcoded version badge with dynamic GitHub Releases shield ([b96b851](https://github.com/potterwhite/obsidian-nexus/commit/b96b851ce764ca8234f5941dd98282ed0d327ec0))
+
 ## [0.5.0](https://github.com/potterwhite/obsidian-nexus/compare/v0.4.0...v0.5.0) (2026-01-05)
 
 
