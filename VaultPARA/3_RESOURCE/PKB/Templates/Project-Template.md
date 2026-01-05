@@ -2,7 +2,8 @@
 type: project
 created: <% tp.date.now("YYYY-MM-DD") %>
 status: active
-area: "[[Your Area Here]]"
+area:
+  - "[[Your Area Here]]"
 archive: false
 tags: journal/project
 ---

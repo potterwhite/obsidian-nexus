@@ -2,7 +2,8 @@
 tags: journal/daily/<% tp.date.now("YYYY") %>
 date: <% tp.date.now("MMMM D, YYYY") %>
 day_of_week: <% tp.date.now("dddd") %>
-project: "[[Area-Journal]]"
+project:
+  - "[[Area-Journal]]"
 year: <% tp.date.now("YYYY") %>
 ---
 
