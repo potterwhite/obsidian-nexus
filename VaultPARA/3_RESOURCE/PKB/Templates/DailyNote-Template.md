@@ -110,21 +110,32 @@ let rows = tasks.map(t => {
 
     totalMinutes += duration;
 
-    // 解析项目名称
-    let projectLink = t.project ? t.project : "-";
+    // 👇👇👇 把这里原本的一行代码，换成上面那一长段 👇👇👇
+    // 解析任务名称 (修复下划线导致的 em> 乱码问题)
+    let taskNameStr = "-";
+    if (t.task_name) {
+        if (t.task_name.path) {
+            let path = t.task_name.path;
+            let displayName = path.split("/").pop().replace(/\.md$/, "");
+            let safeDisplayName = displayName.replace(/_/g, "_\u200b");
+            taskNameStr = `[[${path}|${safeDisplayName}]]`;
+        } else {
+            taskNameStr = String(t.task_name).replace(/_/g, "_\u200b");
+        }
+    }
+    // 👆👆👆 替换结束 👆👆👆
 
     return [
-        t.text,
+        t.text.replace(/\(.*?::.*?\)/g, "").trim(),
         startStr,
         endStr,
         duration + " min",
-        t.category || "-",
-        projectLink
+        taskNameStr
     ];
 });
 
 // 3. 输出表格
-dv.table(["任务", "开始", "结束", "时长", "分类", "项目"], rows);
+dv.table(["任务", "开始", "结束", "时长", "任务名称"], rows);
 
 // 4. 输出总计
 if (totalMinutes > 0) {
