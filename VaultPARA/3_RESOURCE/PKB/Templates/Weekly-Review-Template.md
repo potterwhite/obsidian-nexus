@@ -221,6 +221,135 @@ if (formattedProjectRows.length > 0) {
 
 // 3. 底部总计
 let weekTotal = slots.reduce((sum, s) => sum + s.duration, 0);
+
+
+// === 准备图表数据：只取项目名最后一段 + 小时数 ===
+let projectData = [];
+const threshold = weekTotal * 0.03; // 仍保留阈值，用于过滤太小的项目（而不是归入“其他”）
+
+for (let [projectLink, totalMin] of Object.entries(projectTotals)) {
+    // 提取干净的项目名：去掉 [[ ]] 和 | 显示文字，取路径最后一段
+    let fullName = projectLink.replace(/^\[\[|\]\]$/g, "").replace(/\|.*$/, "").trim();
+    let projectName = fullName.split("/").pop().trim(); // 只取最后一段
+    if (projectName === "") projectName = "Unknown Project";
+
+    let hours = Math.round(totalMin / 6) / 10; // 保留一位小数
+
+    /*// 只保留占总时长 3% 以上的项目（小项目直接忽略，不显示“其他”）
+    if (totalMin >= threshold) {
+        projectData.push({ project: projectName, hours: hours });
+    }*/
+    projectData.push({ project: projectName, hours: hours });
+}
+// 从大到小排序
+projectData.sort((a, b) => b.hours - a.hours);
+
+// === 饼图：项目时间占比 ===
+dv.header(3, "项目时间占比（饼图）");
+
+let pieYamlData = projectData.map(p => {
+    let safeName = p.project.replace(/"/g, '\\"');
+    return `  - type: "${safeName}"\n    value: ${p.hours.toFixed(1)}`;
+}).join("\n");
+
+dv.el("div", `
+\`\`\`chartsview
+type: Pie
+data:
+${pieYamlData}
+options:
+  angleField: value
+  colorField: type
+  innerRadius: 0.6
+  label:
+    type: inner
+    content: "{percentage}"
+  statistic:
+    title: false
+    content:
+      content: '总 ${(weekTotal / 60).toFixed(1)} h'
+\`\`\`
+`);
+
+// === 柱状图：项目总时长（已修复）===
+dv.header(3, "项目总时长（柱状图）");
+
+let columnYamlData = projectData.map(p => {
+    let safeName = p.project.replace(/"/g, '\\"');
+    return `  - project: "${safeName}"\n    hours: ${p.hours.toFixed(1)}`;
+}).join("\n");
+
+dv.el("div", `
+\`\`\`chartsview
+type: Column
+data:
+${columnYamlData}
+options:
+  isStack: false
+  xField: project
+  yField: hours
+  seriesField: project
+  label:
+    position: top
+    style:
+      fontSize: 12
+      fill: '#FFFFFF'
+      opacity: 0.9
+  xAxis:
+    label:
+      autoRotate: true
+      rotate: 45          # 强制45度倾斜，彻底避免重叠
+      autoHide: false     # 关闭自动隐藏，所有标签都显示
+      style:
+        fontSize: 11
+  yAxis:
+    title:
+      text: '小时数'
+  columnWidthRatio: 0.6   # 柱子宽度适中
+  maxColumnWidth: 60      # 防止柱子太宽
+  animation: true
+\`\`\`
+`);
+
+// === 项目总时长（水平条形图 - 已修复）===
+dv.header(3, "项目总时长（水平条形图）");
+
+let barYamlData = projectData.map(p => {
+    let safeName = p.project.replace(/"/g, '\\"');
+    return `  - project: "${safeName}"\n    hours: ${p.hours.toFixed(1)}`;
+}).join("\n");
+
+dv.el("div", `
+\`\`\`chartsview
+type: Bar
+data:
+${barYamlData}
+options:
+  yField: project
+  xField: hours
+  seriesField: project
+  barWidthRatio: 0.8
+  maxBarWidth: 40
+  label:
+    position: right    # 让数字显示在条形图右侧
+    offset: 10
+    style:
+      fontSize: 13
+      fill: "#FFFFFF"  # 数字颜色
+  xAxis:
+    title:
+      text: "小时数"
+  yAxis:
+    label:
+      style:
+        fontSize: 12
+  legend:
+    position: "top-right"
+  animation: true
+\`\`\`
+`);
+
+
 let hours = Math.floor(weekTotal / 60);
 let minutes = weekTotal % 60;
 dv.paragraph(`**本周总耗时:** ${weekTotal} 分钟 (${hours}小时 ${minutes}分钟)`);
