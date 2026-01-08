@@ -142,15 +142,31 @@ for (let s of slots) {
 // 输出 project 总耗时表
 let projectRows = [];
 for (let [project, total] of Object.entries(projectTotals)) {
-    projectRows.push([project, total + " min"]);
+    projectRows.push([project, total]);
 }
 
+projectRows.sort((a, b) => b[1] - a[1]);
+// 修改开始：增加小时显示逻辑
+let formattedProjectRows = projectRows.map(row => {
+    let total = row[1];
+    let h = Math.floor(total / 60);
+    let m = total % 60;
+
+    // 如果超过1小时，显示 "总分钟 (X小时 Y分钟)"，否则只显示分钟
+    let timeString = (h > 0)
+        ? `${total} min (${h}hour ${m}min)`
+        : `${total} min`;
+
+    return [row[0], timeString];
+});
+// 修改结束
+
 dv.header(3, "Project Total Time");
-dv.table(["Project", "Total Time (min)"], projectRows);
-
-
-
-
+if (formattedProjectRows.length > 0) {
+    dv.table(["Project", "Total Time"], formattedProjectRows);
+} else {
+    dv.paragraph("No project found。");
+}
 
 
 // 总结统计
