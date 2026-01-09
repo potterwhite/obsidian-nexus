@@ -318,7 +318,90 @@ dv.paragraph(`**本年总计：${monthTotal} 分钟（${(monthTotal / 60).toFixe
 - **Major Milestones:**
     -
 - **Reflections:**
-    -
+
+```dataviewjs
+// === 1. 配置与初始化 ===
+const inputYear = "<% year %>";
+const targetHeader = "## 💡 想法与反思 (Ideas & Reflections)";
+const moment = window.moment;
+
+// 计算年度起止
+const yearStart = moment().year(Number(inputYear)).startOf("year");
+const yearEnd = moment().year(Number(inputYear)).endOf("year");
+
+dv.paragraph(`⏳ 正在扫描 **${inputYear}** 年的反思内容并按时间排序...`);
+
+// === 2. 获取文件列表 ===
+// 这里先不排序，等提取完有了准确日期后再排
+const pages = dv.pages('#journal/daily');
+let results = [];
+
+// === 3. 核心遍历逻辑 ===
+for (let page of pages) {
+    // A. 解析日期 (核心修复：支持多种文件名格式)
+    const dateStr = page.date || page.file.name;
+    const date = moment(dateStr, ["YYYY-MM-DD", "MMMM D, YYYY", "YYYY/M/D"], true);
+
+    // B. 日期过滤：必须有效、且在当年内
+    if (!date.isValid() || date.isBefore(yearStart) || date.isAfter(yearEnd)) continue;
+
+    // C. 读取文件
+    const file = app.vault.getAbstractFileByPath(page.file.path);
+    if (!file) continue;
+
+    const content = await app.vault.read(file);
+
+    // D. 提取内容
+    const lines = content.split('\n');
+    let isCapturing = false;
+    let capturedText = [];
+
+    for (let line of lines) {
+        // 匹配标题
+        if (line.trim().startsWith(targetHeader) || line.includes("💡 想法与反思")) {
+            isCapturing = true;
+            continue;
+        }
+        // 遇到下个标题停止 (以 ## 开头)
+        if (isCapturing && line.trim().startsWith("## ")) {
+            break;
+        }
+        // 收集内容
+        if (isCapturing) {
+            capturedText.push(line);
+        }
+    }
+
+    let cleanText = capturedText.join('\n').trim();
+
+    // E. 严格过滤：如果去除了空格后长度为0，说明没写内容，不存入
+    if (cleanText.length === 0) continue;
+
+    // F. 存入结果 (同时存入 moment 对象用于排序)
+    results.push({
+        link: page.file.link,
+        dateObj: date, // 存这个是为了排序
+        text: cleanText
+    });
+}
+
+// === 4. 排序与渲染 (核心修复) ===
+dv.container.innerHTML = ""; // 清除加载提示
+
+if (results.length === 0) {
+    dv.paragraph("ℹ️ 本年度没有提取到有效的反思内容。");
+} else {
+    // ⬇️ 关键步骤：按日期对象正序排列 (Jan -> Dec)
+    results.sort((a, b) => a.dateObj - b.dateObj);
+
+    dv.header(4, `📝 共提取到 ${results.length} 天的记录 (按时间顺序)`);
+
+    for (let item of results) {
+        // 使用 Callout 展示
+        dv.paragraph(`> [!QUOTE]+ ${item.link}\n> ` + item.text.replace(/\n/g, "\n> "));
+    }
+}
+```
 - **Goals for Next Year (<% year + 1 %>):**
     -
 
