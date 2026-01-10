@@ -318,10 +318,9 @@ dv.paragraph(`**本年总计：${monthTotal} 分钟（${(monthTotal / 60).toFixe
 - **Major Milestones:**
     -
 - **Reflections:**
-
 ```dataviewjs
 // === 1. 配置与初始化 ===
-const inputYear = "<% year %>";
+const inputYear = "2025";
 const targetHeader = "## 💡 想法与反思 (Ideas & Reflections)";
 const moment = window.moment;
 
@@ -372,10 +371,17 @@ for (let page of pages) {
         }
     }
 
-    let cleanText = capturedText.join('\n').trim();
+	// === E. 严格过滤 (核心修改) ===
+    const rawText = capturedText.join('\n');
 
-    // E. 严格过滤：如果去除了空格后长度为0，说明没写内容，不存入
-    if (cleanText.length === 0) continue;
+    // 正则检测：内容必须包含至少一个 字母(a-z)、数字(0-9) 或 汉字
+    // 这样可以过滤掉只有 "---"、空格、换行或标点的条目
+    const hasContent = /[a-zA-Z0-9\u4e00-\u9fa5]/.test(rawText);
+
+    // 如果检测不到实质文字，跳过此文件
+    if (!hasContent) continue;
+
+    let cleanText = rawText.trim();
 
     // F. 存入结果 (同时存入 moment 对象用于排序)
     results.push({
