@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+---
+
+## [0.6.0](https://github.com/potterwhite/obsidian-nexus/compare/v0.5.2...v0.6.0) (2026-01-13)
+
+feat(templates): overhaul review system with visualization, interactivity, and performance fixes
+
+Major upgrades to Daily, Weekly, and Yearly templates, introducing data visualization and significantly improving rendering performance.
+
+Details:
+1. Daily Note (Interactive):
+   - Feat: Replaced static frontmatter with JS execution block.
+   - Feat: Added `tp.system.prompt` to allow custom date input (defaults to today) with auto-validation and dynamic frontmatter generation.
+
+2. Yearly & Weekly Reviews (Visualization):
+   - Feat: Integrated `ChartsView` plugin to generate Pie (weight), Column (time comparison), and Bar (ranking) charts.
+   - Perf: Optimized Column charts by limiting data to top 40 projects and using vertical text for X-axis to prevent rendering lag.
+   - Feat: Added pagination logic for Bar charts to handle long project lists across multiple pages.
+   - Perf: Rewrote "Ideas & Reflections" extraction in Yearly Review to use `app.metadataCache`. Skips file reading if headers are missing, reducing generation time from ~10s to <1s.
+
+3. Monthly Review:
+   - Style: Improved time formatting to show "X min (Y hour Z min)" instead of just minutes.
+
+4. New Template:
+   - Feat: Created `年度时间统计表-Template.md` for manual annual reporting with interactive prompts and built-in ChartsView support.
+
+* **templates:** overhaul review system with visualization, interactivity, and performance fixes ([6938d03](https://github.com/potterwhite/obsidian-nexus/commit/6938d03560bbb0efa2ec4d4e75d2c06f0c434858))
+
+
+---
+
+
 ## [0.5.2](https://github.com/potterwhite/obsidian-nexus/compare/v0.5.1...v0.5.2) (2026-01-07)
 
 
