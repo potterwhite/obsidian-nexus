@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.6.0](https://github.com/potterwhite/obsidian-nexus/compare/v0.5.2...v0.6.0) (2026-01-13)
+
+
+### ✨ Added
+
+* **templates:** overhaul review system with visualization, interactivity, and performance fixes ([6938d03](https://github.com/potterwhite/obsidian-nexus/commit/6938d03560bbb0efa2ec4d4e75d2c06f0c434858))
+
 ## [0.5.2](https://github.com/potterwhite/obsidian-nexus/compare/v0.5.1...v0.5.2) (2026-01-07)
 
 
