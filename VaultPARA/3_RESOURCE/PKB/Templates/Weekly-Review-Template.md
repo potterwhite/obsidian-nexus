@@ -94,6 +94,50 @@ const inputWeek = "<% weekNum %>";
 
 const targetSection = "想法与反思"; // 你的标题关键词，不需要写 #
 
+const prompt_text = `# Role
+You are an objective data analyst and archivist. Your task is to process unstructured personal diary entries and organize them into structured, factual categories. Think of yourself as a "casing" (肠衣) that shapes discrete, loose information into defined "containers."
+
+# Constraints & Rules
+1. **No Subjectivity:** Do not offer advice, emotional comfort, or psychological interpretation. Do not summarize the "vibe." Only extract what actually happened or what was explicitly thought.
+2. **Quantitative Focus:** Where possible, count the frequency of specific thoughts, actions, or desires (e.g., "Mentioned leaving: X times").
+3. **Language:** The final output must be in **Chinese**.
+
+# Output Structure (The Containers)
+Please categorize the content into the following logical containers (or others if relevant):
+
+1. **📦 Container 1: Life & Family Logistics**
+   - Concrete events (e.g., "Sent tea," "Ate noodles").
+   - Financial decisions.
+   - Family interactions (facts only).
+
+2. **🛠️ Container 2: Work & Technical Output**
+   - Specific tasks completed (e.g., "Submitted PR," "Converted model").
+   - Technical knowledge points learned or reinforced.
+   - Tools used.
+
+3. **🚀 Container 3: Career Strategy & Entrepreneurship**
+   - Strategic thoughts recorded.
+   - Business ideas or market analysis mentioned.
+   - Decisions regarding career path (staying vs. leaving).
+
+4. **🧠 Container 4: Mental Models & Methodology**
+   - Reflections on learning methods.
+   - Productivity workflows.
+
+5. **📊 Data Summary (Statistics)**
+   - Provide a bulleted list of counts for recurring themes.
+   - Examples:
+     - "Times mentioned wanting to leave/resign: [Count]"
+     - "Times mentioned entrepreneurship/startup ideas: [Count]"
+     - "Specific technical tasks completed: [Count]"
+     - "Money-saving actions: [Count]"
+
+# Action
+Now, please analyze the provided text below based on these instructions:
+
+[Paste your diary text here]`
+let allContentForAI = "";
+
 const weekStart = moment(inputYear, "YYYY").locale('en').week(Number(inputWeek)).startOf('week');
 const weekEnd = moment(inputYear, "YYYY").locale('en').week(Number(inputWeek)).endOf('week');
 
@@ -165,7 +209,39 @@ if (reflectionResults.length === 0) {
     dv.paragraph(`**📅 共提取到 ${reflectionResults.length} 天的记录**`);
     for (let item of reflectionResults) {
         dv.paragraph(`> [!QUOTE]+ ${item.link}\n> ` + item.text.replace(/\n/g, "\n> "));
+		// 【新增 2】将每一天的日记拼接到总变量中，加上日期方便区分
+	    allContentForAI += `\n\n--- Date: ${item.dateObj.format("YYYY-MM-DD")} ---\n${item.text}`;
     }
+}
+
+
+// ... 上面是循环结束 ...
+
+// 【新增 3】创建一键复制按钮
+if (reflectionResults.length > 0) {
+    const btn = dv.el("button", "📋 一键复制 Prompt + 所有日记", { cls: "ai-copy-btn" });
+
+    // 给按钮加上点击样式（可选，为了好看一点）
+    btn.style.marginTop = "15px";
+    btn.style.padding = "10px 20px";
+    btn.style.cursor = "pointer";
+    btn.style.backgroundColor = "var(--interactive-accent)";
+    btn.style.color = "var(--text-on-accent)";
+    btn.style.border = "none";
+    btn.style.borderRadius = "5px";
+
+    btn.onclick = () => {
+        // 1. 拼接最终的 Payload：Prompt在前，日记内容在后
+        const finalPayload = prompt_text + "\n\n" + allContentForAI;
+
+        // 2. 写入剪贴板
+        navigator.clipboard.writeText(finalPayload).then(() => {
+            // 3. 复制成功的反馈
+            btn.innerText = "✅ 已复制！快去发给 AI 吧";
+            // 2秒后恢复原状
+            setTimeout(() => { btn.innerText = "📋 一键复制 Prompt + 所有日记"; }, 2000);
+        });
+    };
 }
 ```
 
@@ -447,12 +523,12 @@ dv.paragraph(`**本周总耗时:** ${weekTotal} 分钟 (${hours}小时 ${minutes
 
 ## 📝 本周总结 (Weekly Summary)
 
-- 核心进度 (Main progress):
-    -
-- 问题与反思 (Issues & reflections):
-    -
-- 下周计划 (Next week's plan):
-    -
+### 核心进度 (Main progress):
+-
+### 问题与反思 (Issues & reflections):
+-
+### 下周计划 (Next week's plan):
+-
 
 ---
 

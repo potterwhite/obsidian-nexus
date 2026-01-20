@@ -475,12 +475,12 @@ dv.paragraph(`**本月总计：${monthTotal} 分钟（${(monthTotal / 60).toFixe
 
 ## 📝 Monthly Summary
 
-- Main progress:
-    -
-- Issues & reflections:
-    -
-- Next month's plan:
-    -
+### 核心进度 (Main progress):
+-
+### 问题与反思 (Issues & reflections):
+-
+### 下周计划 (Next week's plan):
+-
 
 ---
 
