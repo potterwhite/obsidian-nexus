@@ -81,6 +81,94 @@ tags: summary/week
 
 ---
 
+
+## 💡 Ideas & Reflections Look Back
+```dataviewjs
+// ==========================================================
+// 📝 PART 1: 想法与反思提取 (Metadata 预检查优化版)
+// ==========================================================
+const moment = window.moment;
+// 🟢 请确保这里的年份和 Part 2 一致，或者手动写死 "2025"
+const inputYear = "<% year %>";
+const inputWeek = "<% weekNum %>";
+
+const targetSection = "想法与反思"; // 你的标题关键词，不需要写 #
+
+const weekStart = moment(inputYear, "YYYY").locale('en').week(Number(inputWeek)).startOf('week');
+const weekEnd = moment(inputYear, "YYYY").locale('en').week(Number(inputWeek)).endOf('week');
+
+// 🟢 1. 创建一个容器用于显示状态，稍后我们可以修改它
+const container = dv.el("div", `*⏳ 正在智能扫描 ${inputYear} 年第 ${inputWeek} 周的日记...*`);
+
+const journalPages = dv.pages('#journal/daily');
+let reflectionResults = [];
+
+// ⏱️ 性能优化核心：遍历处理
+for (let page of journalPages) {
+    // 1. 日期快速过滤
+    const dateStr = page.date || page.file.name;
+    const date = moment(dateStr, ["YYYY-MM-DD", "MMMM D, YYYY", "YYYY/M/D"], true);
+    if (!date.isValid() || date.isBefore(weekStart) || date.isAfter(weekEnd)) continue;
+
+    // 2. 🚀【核心优化】先查缓存，不读文件！
+    // 获取 Obsidian 对该文件的元数据缓存
+    const file = app.vault.getAbstractFileByPath(page.file.path);
+    if (!file) continue;
+
+    const fileCache = app.metadataCache.getFileCache(file);
+    // 如果缓存里没有 headers 属性，或者 headers 里找不到包含关键词的标题，直接跳过
+    // 这样就避免了 90% 不必要的硬盘读取
+    let hasTargetHeader = false;
+    if (fileCache && fileCache.headings) {
+        hasTargetHeader = fileCache.headings.some(h => h.heading.includes(targetSection));
+    }
+
+    if (!hasTargetHeader) continue;
+
+    // 3. 只有确认有标题了，才进行昂贵的读取操作
+    const content = await app.vault.read(file);
+    const lines = content.split('\n');
+    let isCapturing = false;
+    let capturedText = [];
+
+    // 提取内容逻辑
+    for (let line of lines) {
+        // 兼容带 Emoji 或不带的情况
+        if (line.trim().includes(targetSection) && line.trim().startsWith("#")) {
+            isCapturing = true;
+            continue;
+        }
+        if (isCapturing && line.trim().startsWith("## ")) break;
+        if (isCapturing) capturedText.push(line);
+    }
+
+    const rawText = capturedText.join('\n');
+    // 再次过滤空内容
+    if (/[a-zA-Z0-9\u4e00-\u9fa5]/.test(rawText)) {
+        reflectionResults.push({
+            link: page.file.link,
+            dateObj: date,
+            text: rawText.trim()
+        });
+    }
+}
+
+// 4. 扫描完成后，清空状态文字，或者替换为统计信息
+// container.innerText = ""; // 直接清空，不占用空间
+// 如果你想显示总结，可以用:
+container.innerText = `✅ 扫描完成，共 ${reflectionResults.length} 条`;
+
+if (reflectionResults.length === 0) {
+    dv.paragraph("> *No reflections found for this year.*");
+} else {
+    reflectionResults.sort((a, b) => a.dateObj - b.dateObj);
+    dv.paragraph(`**📅 共提取到 ${reflectionResults.length} 天的记录**`);
+    for (let item of reflectionResults) {
+        dv.paragraph(`> [!QUOTE]+ ${item.link}\n> ` + item.text.replace(/\n/g, "\n> "));
+    }
+}
+```
+
 ## ⏱️ 每周任务时间统计
 
 ```dataviewjs
