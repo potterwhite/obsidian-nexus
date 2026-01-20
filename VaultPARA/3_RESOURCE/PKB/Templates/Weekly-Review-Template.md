@@ -369,4 +369,4 @@ dv.paragraph(`**本周总耗时:** ${weekTotal} 分钟 (${hours}小时 ${minutes
 ---
 
 ## 🔗 相关链接
-- [[Project_Obsidian建立Journal系统]]
+- [[Project_Obsidian-Nexus]]
