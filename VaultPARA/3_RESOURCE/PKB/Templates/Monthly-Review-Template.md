@@ -60,6 +60,92 @@ tags: summary/month
 
 ---
 
+## 💡 Ideas & Reflections Look Back
+```dataviewjs
+// ==========================================================
+// 📝 PART 1: 想法与反思提取 (Metadata 预检查优化版)
+// ==========================================================
+const moment = window.moment;
+const inputYear = "<% year %>";
+const inputMonth = Number("<% monthNum %>") - 1;
+const targetSection = "想法与反思"; // 你的标题关键词，不需要写 #
+
+const MonthStart = moment(inputYear, "YYYY").locale('en').month(inputMonth).startOf('month');
+const MonthEnd = moment(inputYear, "YYYY").locale('en').month(inputMonth).endOf('month');
+
+// 🟢 1. 创建一个容器用于显示状态，稍后我们可以修改它
+const container = dv.el("div", `*⏳ 正在智能扫描 ${inputYear} 年 ${inputMonth} 月的日记...*`);
+
+const journalPages = dv.pages('#journal/daily');
+let reflectionResults = [];
+
+// ⏱️ 性能优化核心：遍历处理
+for (let page of journalPages) {
+    // 1. 日期快速过滤
+    const dateStr = page.date || page.file.name;
+    const date = moment(dateStr, ["YYYY-MM-DD", "MMMM D, YYYY", "YYYY/M/D"], true);
+    if (!date.isValid() || date.isBefore(MonthStart) || date.isAfter(MonthEnd)) continue;
+
+    // 2. 🚀【核心优化】先查缓存，不读文件！
+    // 获取 Obsidian 对该文件的元数据缓存
+    const file = app.vault.getAbstractFileByPath(page.file.path);
+    if (!file) continue;
+
+    const fileCache = app.metadataCache.getFileCache(file);
+    // 如果缓存里没有 headers 属性，或者 headers 里找不到包含关键词的标题，直接跳过
+    // 这样就避免了 90% 不必要的硬盘读取
+    let hasTargetHeader = false;
+    if (fileCache && fileCache.headings) {
+        hasTargetHeader = fileCache.headings.some(h => h.heading.includes(targetSection));
+    }
+
+    if (!hasTargetHeader) continue;
+
+    // 3. 只有确认有标题了，才进行昂贵的读取操作
+    const content = await app.vault.read(file);
+    const lines = content.split('\n');
+    let isCapturing = false;
+    let capturedText = [];
+
+    // 提取内容逻辑
+    for (let line of lines) {
+        // 兼容带 Emoji 或不带的情况
+        if (line.trim().includes(targetSection) && line.trim().startsWith("#")) {
+            isCapturing = true;
+            continue;
+        }
+        if (isCapturing && line.trim().startsWith("## ")) break;
+        if (isCapturing) capturedText.push(line);
+    }
+
+    const rawText = capturedText.join('\n');
+    // 再次过滤空内容
+    if (/[a-zA-Z0-9\u4e00-\u9fa5]/.test(rawText)) {
+        reflectionResults.push({
+            link: page.file.link,
+            dateObj: date,
+            text: rawText.trim()
+        });
+    }
+}
+
+// 4. 扫描完成后，清空状态文字，或者替换为统计信息
+// container.innerText = ""; // 直接清空，不占用空间
+// 如果你想显示总结，可以用:
+container.innerText = `✅ 扫描完成，共 ${reflectionResults.length} 条`;
+
+if (reflectionResults.length === 0) {
+    dv.paragraph("> *No reflections found for this month.*");
+} else {
+    reflectionResults.sort((a, b) => a.dateObj - b.dateObj);
+    dv.paragraph(`**📅 共提取到 ${reflectionResults.length} 天的记录**`);
+    for (let item of reflectionResults) {
+        dv.paragraph(`> [!QUOTE]+ ${item.link}\n> ` + item.text.replace(/\n/g, "\n> "));
+    }
+}
+```
+
+
 ## ⏱️ Monthly Task Time Statistics
 
 ```dataviewjs
@@ -318,6 +404,6 @@ dv.paragraph(`**本月总计：${monthTotal} 分钟（${(monthTotal / 60).toFixe
 ---
 
 ## 🔗 Related Links
-- [[Project_Obsidian建立Journal系统]]
+- [[Project_Obsidian-Nexus]]
 - [[Related Task 1]]
 - [[Related Task 2]]
