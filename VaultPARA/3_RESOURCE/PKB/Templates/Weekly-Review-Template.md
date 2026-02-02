@@ -248,29 +248,72 @@ if (reflectionResults.length > 0) {
 ## ⏱️ 每周任务时间统计
 
 ```dataviewjs
+/**
+ * =================================================================================
+ * WEEKLY TASK ANALYTICS ENGINE (Abstracted Version)
+ * =================================================================================
+ * This script separates tasks into logical groups (e.g., Work vs. Life) based on a
+ * configuration list, then renders independent statistics and charts for each group.
+ */
+
 const moment = window.moment;
 
-// 获取 Frontmatter 数据
+// ==========================================================
+// 1. CONFIGURATION (配置区域)
+// ==========================================================
+
+// 🟢 [USER CONFIG] Define keywords or filenames for projects you want to separate.
+// If this list is empty [], all projects will be shown in one main dashboard.
+// Example: ["project_family", "Health", "Reading"]
+// 这里的关键词支持模糊匹配 (只要项目名包含该词即可)
+const SEPARATE_PROJECT_LIST = ["project_family", "project_life"];
+
+// Templater inputs (injected from your FrontMatter)
 const inputYear = "<% year %>";
 const inputWeek = "<% weekNum %>";
 
-// 【时间计算】强制对齐 Western 标准 (Sunday Start)
-// 确保 Dataview 的计算窗口与 Templater 生成的完全一致
+// ==========================================================
+// 2. DATA COLLECTION ENGINE (数据采集引擎)
+// ==========================================================
+
+// Calculate Time Window (Sunday Start)
 const weekStart = moment(inputYear, "YYYY").locale('en').week(Number(inputWeek)).startOf('week');
 const weekEnd = moment(inputYear, "YYYY").locale('en').week(Number(inputWeek)).endOf('week');
 
-let slots = [];
+// Helper: Normalize project names from "[[File|Name]]" or "File" to just "File"
+// 辅助函数：清洗项目名称
+function getCleanProjectName(rawName) {
+    if (!rawName) return "Unknown Project";
+    let str = String(rawName);
+    // Remove [[ ]] and optional alias |...
+    let clean = str.replace(/^\[\[|\]\]$/g, "").split("|")[0];
+    // Get the last part of the path (filename only)
+    return clean.split("/").pop().trim();
+}
 
-// 查找日记 (递归查找 journal/daily 及其子文件夹)
+// Helper: Check if a project matches the separation list
+// 辅助函数：判断项目是否属于“分离组”
+function isSeparatedProject(rawProjectName) {
+    if (SEPARATE_PROJECT_LIST.length === 0) return false;
+    const cleanName = getCleanProjectName(rawProjectName).toLowerCase();
+    return SEPARATE_PROJECT_LIST.some(keyword =>
+        cleanName.includes(keyword.toLowerCase())
+    );
+}
+
+let allSlots = [];
+
+// Iterate through Daily Notes
+// 遍历日记文件，抓取任务
 for (let daily of dv.pages('#journal/daily')) {
     const dateStr = daily.date || daily.file.name;
     const date = moment(dateStr, ["YYYY-MM-DD", "MMMM D, YYYY", "YYYY/M/D"]);
 
-    // 过滤：精确匹配本周日期
     if (!date.isValid() || date.isBefore(weekStart) || date.isAfter(weekEnd)) continue;
     if (!daily.file.tasks) continue;
 
     for (let t of daily.file.tasks) {
+        // Basic validation
         if (!t.task_uuid || !t.start || !t.end) continue;
 
         let start = new Date("1970-01-01T" + t.start.padStart(5, '0'));
@@ -279,36 +322,34 @@ for (let daily of dv.pages('#journal/daily')) {
 
         if (duration <= 0) continue;
 
+        // Extract Metadata
         let taskPage = dv.pages().where(p => p.task_uuid === t.task_uuid).first();
         let taskName = taskPage?.task_name || taskPage?.file?.name || t.text;
         let taskFile = taskPage?.file?.name;
 
-        let projectName = taskPage?.project ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project) : "Unknown Project";
+        let projectName = taskPage?.project
+            ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project)
+            : "Unknown Project";
         let projectFile = null;
         if (typeof projectName === "string" && projectName.startsWith("[[")) {
             projectFile = projectName.replace(/^\[\[|\]\]$/g, "");
         }
 
-        // 【关键修复】构建安全跳转链接
-        // 1. 使用 daily.file.path 获取绝对路径，防止 undefined
+        // Build clickable link
         let linkPath = daily.file.path;
-        let anchor = "";
+        let anchor = (t.header && t.header.subpath) ? "#" + t.header.subpath : "";
 
-        // 2. 只有当 subpath 存在时，才添加 "#" 前缀
-        // 这样构建出的链接是 [[路径#标题]]，Obsidian 会识别为内部跳转而非新建文件
-        if (t.header && t.header.subpath) {
-            anchor = "#" + t.header.subpath;
-        }
-
-        slots.push({
-            date: date.format("YYYY-MM-DD"),
+        // Push to raw data array
+        allSlots.push({
+            dateObj: date, // Keep object for sorting
+            dateStr: date.format("YYYY-MM-DD"),
             start: t.start,
             end: t.end,
-            duration,
-            taskName,
-            taskFile,
-            projectName,
-            projectFile,
+            duration: duration,
+            taskName: taskName,
+            taskFile: taskFile,
+            projectName: projectName, // Raw name (e.g. [[Project A]])
+            projectFile: projectFile,
             linkPath: linkPath,
             anchor: anchor,
             text: t.text
@@ -316,117 +357,123 @@ for (let daily of dv.pages('#journal/daily')) {
     }
 }
 
-// 排序：先按日期，再按开始时间
-slots.sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
+// Sort: Date -> Start Time
+allSlots.sort((a, b) => a.dateStr.localeCompare(b.dateStr) || a.start.localeCompare(b.start));
 
-// 1. 输出详细时间块表格
-let rows = [];
-for (let s of slots) {
-    let projectLink = s.projectFile ? `[[${s.projectFile}|${s.projectName.replace(/^\[\[|\]\]$/g, "")}]]` : s.projectName;
-    let taskLink = s.taskFile ? `[[${s.taskFile}|${s.taskName}]]` : s.taskName;
 
-    // 构建可点击链接 [[Path#Anchor|Display]]
-    let dateClickable = `[[${s.linkPath}${s.anchor}|${s.date}]]`;
-    let timeClickable = `[[${s.linkPath}${s.anchor}|${s.start}-${s.end}]]`;
+// ==========================================================
+// 3. SEPARATION LOGIC (分流逻辑)
+// ==========================================================
 
-	let displayText = s.text.length > 50 ? s.text.substring(0, 47) + "..." : s.text;
-    rows.push([
-        dateClickable,
-        timeClickable,
-        projectLink,
-        taskLink,
-        displayText,
-        s.duration + " 分钟"
-    ]);
-}
+let mainGroupSlots = [];      // For "Work" or "General"
+let separatedGroupSlots = []; // For "Family" or "Special Interest"
 
-dv.header(3, `📅 每周时间块明细 (Week ${inputWeek})`);
-if (rows.length > 0) {
-    dv.table(["日期", "时间", "项目", "任务", "描述", "时长"], rows);
+if (SEPARATE_PROJECT_LIST.length > 0) {
+    allSlots.forEach(slot => {
+        if (isSeparatedProject(slot.projectName)) {
+            separatedGroupSlots.push(slot);
+        } else {
+            mainGroupSlots.push(slot);
+        }
+    });
 } else {
-    dv.paragraph("本周没有找到时间记录。");
+    // If list is empty, everything goes to main
+    mainGroupSlots = allSlots;
 }
 
-// 2. 统计 Project 总耗时 (Statistics for Project Duration)
-let projectTotals = {};
-for (let s of slots) {
-    let projectKey = s.projectFile ? `[[${s.projectFile}|${s.projectName.replace(/^\[\[|\]\]$/g, "")}]]` : s.projectName;
-    if (!projectTotals[projectKey]) projectTotals[projectKey] = 0;
-    projectTotals[projectKey] += s.duration;
-}
+// ==========================================================
+// 4. RENDERING ENGINE (渲染引擎 - 核心抽象层)
+// ==========================================================
 
-// [CRITICAL FIX] Define and populate projectRows BEFORE sorting or mapping
-let projectRows = [];
-for (let [project, total] of Object.entries(projectTotals)) {
-    projectRows.push([project, total]);
-}
+/**
+ * Renders a complete dashboard (Table + Stats + Charts) for a given list of tasks.
+ * @param {string} sectionTitle - The title to display (e.g. "Work Overview")
+ * @param {Array} taskList - The array of task objects
+ * @param {string} icon - Optional emoji icon
+ */
+function renderDashboard(sectionTitle, taskList, icon) {
+    // A. Header
+    dv.header(2, `${icon} ${sectionTitle}`);
 
-// Sort by duration descending
-projectRows.sort((a, b) => b[1] - a[1]);
+    if (taskList.length === 0) {
+        dv.paragraph(`*No tasks found for ${sectionTitle} this week.*`);
+        dv.el("hr", ""); // Divider
+        return;
+    }
 
-// [NEW] Calculate total duration sum for percentage math
-let totalDuration = projectRows.reduce((sum, row) => sum + row[1], 0);
+    // B. Detailed Task Table
+    // 构建时间块明细表
+    let tableRows = taskList.map(s => {
+        let projectLink = s.projectFile ? `[[${s.projectFile}|${getCleanProjectName(s.projectName)}]]` : s.projectName;
+        let taskLink = s.taskFile ? `[[${s.taskFile}|${s.taskName}]]` : s.taskName;
+        let dateClickable = `[[${s.linkPath}${s.anchor}|${s.dateStr}]]`;
+        let timeClickable = `[[${s.linkPath}${s.anchor}|${s.start}-${s.end}]]`;
+        let displayText = s.text.length > 50 ? s.text.substring(0, 47) + "..." : s.text;
 
-// [MODIFIED] Format rows and add percentage calculation
-let formattedProjectRows = projectRows.map(row => {
-    let total = row[1];
-    let h = Math.floor(total / 60);
-    let m = total % 60;
+        return [
+            dateClickable,
+            timeClickable,
+            projectLink,
+            taskLink,
+            displayText,
+            s.duration + " min"
+        ];
+    });
 
-    // Format time display
-    let timeString = (h > 0)
-        ? `${total} 分钟 (${h}小时 ${m}分钟)`
-        : `${total} 分钟`;
+    dv.header(4, `📅 Time Logs (${taskList.length} records)`);
+    dv.table(["Date", "Time", "Project", "Task", "Desc", "Duration"], tableRows);
 
-    // [NEW] Calculate Percentage (format as string with %)
-    let percent = totalDuration > 0 ? (total / totalDuration * 100).toFixed(1) + "%" : "0.0%";
+    // C. Statistics Calculation
+    // 计算统计数据 (Totals & Percentages)
 
-    // Return: [Project Name, Time String, Percentage String]
-    return [row[0], timeString, percent];
-});
+    let groupTotalDuration = taskList.reduce((sum, s) => sum + s.duration, 0);
+    let projectTotals = {};
 
-dv.header(3, "📊 项目总耗时");
-if (formattedProjectRows.length > 0) {
-    // [MODIFIED] Update headers to include "Percentage" column
-    dv.table(["项目", "总时长", "占比"], formattedProjectRows);
-} else {
-    dv.paragraph("没有找到项目数据。");
-}
+    taskList.forEach(s => {
+        // Use clean name for aggregation key
+        let cleanName = getCleanProjectName(s.projectName);
+        if (!projectTotals[cleanName]) projectTotals[cleanName] = 0;
+        projectTotals[cleanName] += s.duration;
+    });
 
-// 3. 底部总计
-let weekTotal = slots.reduce((sum, s) => sum + s.duration, 0);
+    // Convert to sorted array
+    let statsRows = Object.entries(projectTotals)
+        .map(([name, total]) => ({ name, total }))
+        .sort((a, b) => b.total - a.total);
 
+    // Prepare Table Rows with Percentages
+    let statsTableRows = statsRows.map(row => {
+        let h = Math.floor(row.total / 60);
+        let m = row.total % 60;
+        let timeString = h > 0 ? `${row.total} min (${h}h ${m}m)` : `${row.total} min`;
+        let percent = groupTotalDuration > 0 ? (row.total / groupTotalDuration * 100).toFixed(1) + "%" : "0.0%";
+        return [row.name, timeString, percent];
+    });
 
-// === 准备图表数据：只取项目名最后一段 + 小时数 ===
-let projectData = [];
-const threshold = weekTotal * 0.03; // 仍保留阈值，用于过滤太小的项目（而不是归入“其他”）
+    dv.header(4, "📊 Project Statistics");
+    dv.table(["Project", "Total Duration", "Percentage"], statsTableRows);
 
-for (let [projectLink, totalMin] of Object.entries(projectTotals)) {
-    // 提取干净的项目名：去掉 [[ ]] 和 | 显示文字，取路径最后一段
-    let fullName = projectLink.replace(/^\[\[|\]\]$/g, "").replace(/\|.*$/, "").trim();
-    let projectName = fullName.split("/").pop().trim(); // 只取最后一段
-    if (projectName === "") projectName = "Unknown Project";
+    // Print Total Sum for this group
+    let totalH = Math.floor(groupTotalDuration / 60);
+    let totalM = groupTotalDuration % 60;
+    dv.paragraph(`**${sectionTitle} Total:** ${groupTotalDuration} min (${totalH}h ${totalM}m)`);
 
-    let hours = Math.round(totalMin / 6) / 10; // 保留一位小数
+    // D. Charts Generation (ChartsView)
+    // 图表生成：饼图、柱状图、条形图
 
-    /*// 只保留占总时长 3% 以上的项目（小项目直接忽略，不显示“其他”）
-    if (totalMin >= threshold) {
-        projectData.push({ project: projectName, hours: hours });
-    }*/
-    projectData.push({ project: projectName, hours: hours });
-}
-// 从大到小排序
-projectData.sort((a, b) => b.hours - a.hours);
+    // Prepare data for charts (Hours)
+    let chartData = statsRows.map(p => ({
+        project: p.name,
+        hours: Number((p.total / 60).toFixed(1))
+    }));
 
-// === 饼图：项目时间占比 ===
-dv.header(3, "项目时间占比（饼图）");
+    // 1. Pie Chart
+    let pieYamlData = chartData.map(p => {
+        let safeName = p.project.replace(/"/g, '\\"');
+        return `  - type: "${safeName}"\n    value: ${p.hours}`;
+    }).join("\n");
 
-let pieYamlData = projectData.map(p => {
-    let safeName = p.project.replace(/"/g, '\\"');
-    return `  - type: "${safeName}"\n    value: ${p.hours.toFixed(1)}`;
-}).join("\n");
-
-dv.el("div", `
+    dv.el("div", `
 \`\`\`chartsview
 type: Pie
 data:
@@ -441,23 +488,23 @@ options:
   statistic:
     title: false
     content:
-      content: '总 ${(weekTotal / 60).toFixed(1)} h'
+      content: '${sectionTitle}'
+      style:
+        fontSize: 16
 \`\`\`
 `);
 
-// === 柱状图：项目总时长（已修复）===
-dv.header(3, "项目总时长（柱状图）");
+    // 2. Column Chart (Time usage)
+    let colYamlData = chartData.map(p => {
+        let safeName = p.project.replace(/"/g, '\\"');
+        return `  - project: "${safeName}"\n    hours: ${p.hours}`;
+    }).join("\n");
 
-let columnYamlData = projectData.map(p => {
-    let safeName = p.project.replace(/"/g, '\\"');
-    return `  - project: "${safeName}"\n    hours: ${p.hours.toFixed(1)}`;
-}).join("\n");
-
-dv.el("div", `
+    dv.el("div", `
 \`\`\`chartsview
 type: Column
 data:
-${columnYamlData}
+${colYamlData}
 options:
   isStack: false
   xField: project
@@ -468,32 +515,28 @@ options:
     style:
       fontSize: 12
       fill: '#FFFFFF'
-      opacity: 0.9
   xAxis:
     label:
       autoRotate: true
-      rotate: 45          # 强制45度倾斜，彻底避免重叠
-      autoHide: false     # 关闭自动隐藏，所有标签都显示
-      style:
-        fontSize: 11
+      rotate: 45
+      autoHide: false
   yAxis:
     title:
-      text: '小时数'
-  columnWidthRatio: 0.6   # 柱子宽度适中
-  maxColumnWidth: 60      # 防止柱子太宽
+      text: 'Hours'
+  columnWidthRatio: 0.6
+  maxColumnWidth: 60
   animation: true
 \`\`\`
 `);
 
-// === 项目总时长（水平条形图 - 已修复）===
-dv.header(3, "项目总时长（水平条形图）");
+    // 3. Bar Chart (Horizontal)
+    // 水平条形图
+    let barYamlData = chartData.map(p => {
+        let safeName = p.project.replace(/"/g, '\\"');
+        return `  - project: "${safeName}"\n    hours: ${p.hours}`;
+    }).join("\n");
 
-let barYamlData = projectData.map(p => {
-    let safeName = p.project.replace(/"/g, '\\"');
-    return `  - project: "${safeName}"\n    hours: ${p.hours.toFixed(1)}`;
-}).join("\n");
-
-dv.el("div", `
+    dv.el("div", `
 \`\`\`chartsview
 type: Bar
 data:
@@ -505,14 +548,14 @@ options:
   barWidthRatio: 0.8
   maxBarWidth: 40
   label:
-    position: right    # 让数字显示在条形图右侧
+    position: right
     offset: 10
     style:
       fontSize: 13
-      fill: "#FFFFFF"  # 数字颜色
+      fill: "#FFFFFF"
   xAxis:
     title:
-      text: "小时数"
+      text: "Hours"
   yAxis:
     label:
       style:
@@ -523,10 +566,30 @@ options:
 \`\`\`
 `);
 
+    // Add a divider at the end of the section
+    dv.el("hr", "");
+}
 
-let hours = Math.floor(weekTotal / 60);
-let minutes = weekTotal % 60;
-dv.paragraph(`**本周总耗时:** ${weekTotal} 分钟 (${hours}小时 ${minutes}分钟)`);
+
+// ==========================================================
+// 5. EXECUTION (执行渲染)
+// ==========================================================
+
+// Case 1: If there are separated projects, render them first (highlighted)
+// 如果有分离的项目（如家庭），先渲染它们
+if (SEPARATE_PROJECT_LIST.length > 0) {
+    // 渲染特定关注组
+    // You can change the title "Focused / Personal" to whatever you like
+    renderDashboard("Focused / Personal Projects", separatedGroupSlots, "🛡️");
+
+    // 渲染剩余工作组
+    renderDashboard("Main / Work Projects", mainGroupSlots, "💼");
+}
+// Case 2: Standard behavior (One big list)
+// 默认行为：全部渲染在一起
+else {
+    renderDashboard("Weekly Overview (All Projects)", mainGroupSlots, "🚀");
+}
 ```
 
 ---
