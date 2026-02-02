@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.7.0](https://github.com/potterwhite/obsidian-nexus/compare/v0.6.0...v0.7.0) (2026-02-02)
+
+
+### ✨ Added
+
+* **review:** improve weekly and monthly reflection and task review templates ([#19](https://github.com/potterwhite/obsidian-nexus/issues/19)) ([f40a6ae](https://github.com/potterwhite/obsidian-nexus/commit/f40a6ae90c2794c15316f6e18cd3ca320ed286fc))
+
 ## [0.6.0](https://github.com/potterwhite/obsidian-nexus/compare/v0.5.2...v0.6.0) (2026-01-13)
 
 feat(templates): overhaul review system with visualization, interactivity, and performance fixes
