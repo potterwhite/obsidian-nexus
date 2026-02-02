@@ -347,7 +347,7 @@ if (rows.length > 0) {
     dv.paragraph("本周没有找到时间记录。");
 }
 
-// 2. 统计 Project 总耗时
+// 2. 统计 Project 总耗时 (Statistics for Project Duration)
 let projectTotals = {};
 for (let s of slots) {
     let projectKey = s.projectFile ? `[[${s.projectFile}|${s.projectName.replace(/^\[\[|\]\]$/g, "")}]]` : s.projectName;
@@ -355,30 +355,40 @@ for (let s of slots) {
     projectTotals[projectKey] += s.duration;
 }
 
+// [CRITICAL FIX] Define and populate projectRows BEFORE sorting or mapping
 let projectRows = [];
 for (let [project, total] of Object.entries(projectTotals)) {
     projectRows.push([project, total]);
 }
 
+// Sort by duration descending
 projectRows.sort((a, b) => b[1] - a[1]);
-// 修改开始：增加小时显示逻辑
+
+// [NEW] Calculate total duration sum for percentage math
+let totalDuration = projectRows.reduce((sum, row) => sum + row[1], 0);
+
+// [MODIFIED] Format rows and add percentage calculation
 let formattedProjectRows = projectRows.map(row => {
     let total = row[1];
     let h = Math.floor(total / 60);
     let m = total % 60;
 
-    // 如果超过1小时，显示 "总分钟 (X小时 Y分钟)"，否则只显示分钟
+    // Format time display
     let timeString = (h > 0)
         ? `${total} 分钟 (${h}小时 ${m}分钟)`
         : `${total} 分钟`;
 
-    return [row[0], timeString];
+    // [NEW] Calculate Percentage (format as string with %)
+    let percent = totalDuration > 0 ? (total / totalDuration * 100).toFixed(1) + "%" : "0.0%";
+
+    // Return: [Project Name, Time String, Percentage String]
+    return [row[0], timeString, percent];
 });
-// 修改结束
 
 dv.header(3, "📊 项目总耗时");
 if (formattedProjectRows.length > 0) {
-    dv.table(["项目", "总时长"], formattedProjectRows);
+    // [MODIFIED] Update headers to include "Percentage" column
+    dv.table(["项目", "总时长", "占比"], formattedProjectRows);
 } else {
     dv.paragraph("没有找到项目数据。");
 }
