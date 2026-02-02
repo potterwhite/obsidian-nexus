@@ -62,17 +62,15 @@ tags: summary/month
 
 ## 💡 Ideas & Reflections Look Back
 ```dataviewjs
-
-
-
 // ==========================================================
-// 📝 PART 1: 想法与反思提取 (Metadata 预检查优化版)
+// 📝 PART 1: 想法与反思提取 (高性能优化版)
 // ==========================================================
 const moment = window.moment;
 const inputYear = "<% year %>";
-const inputMonth = Number("<% monthNum %>") - 1;
-const targetSection = "想法与反思"; // 你的标题关键词，不需要写 #
+// 月份修正：Templater输入通常是1-12，moment需要0-11，或者直接用YYYY-MM格式
+const inputMonthStr = "<% monthNum %>";
 
+const targetSection = "想法与反思";
 const prompt_text = `# Role
 You are an objective data analyst and archivist. Your task is to process unstructured personal diary entries and organize them into structured, factual categories. Think of yourself as a "casing" (肠衣) that shapes discrete, loose information into defined "containers."
 
@@ -115,48 +113,47 @@ Please categorize the content into the following logical containers (or others i
 Now, please analyze the provided text below based on these instructions:
 
 [Paste your diary text here]`
+
+// 1. 计算时间窗口
+const MonthStart = moment(`${inputYear}-${inputMonthStr}`, "YYYY-M").startOf('month');
+const MonthEnd = moment(`${inputYear}-${inputMonthStr}`, "YYYY-M").endOf('month');
+
+// 2. 显示加载状态 (只渲染一次)
+const container = dv.el("div", `*⏳ 正在扫描 ${inputYear}年${inputMonthStr}月 的日记... (请稍候)*`);
+
+// 3. 准备数据容器
 let allContentForAI = "";
-
-const MonthStart = moment(inputYear, "YYYY").locale('en').month(inputMonth).startOf('month');
-const MonthEnd = moment(inputYear, "YYYY").locale('en').month(inputMonth).endOf('month');
-
-// 🟢 1. 创建一个容器用于显示状态，稍后我们可以修改它
-const container = dv.el("div", `*⏳ 正在智能扫描 ${inputYear} 年 ${inputMonth} 月的日记...*`);
+let displayMarkdown = ""; // 用于屏幕显示的 Markdown 累加器
+let reflectionCount = 0;
 
 const journalPages = dv.pages('#journal/daily');
-let reflectionResults = [];
 
-// ⏱️ 性能优化核心：遍历处理
+// --- 核心循环 ---
+// 并行优化：虽然JS是单线程，但我们可以减少 await 的阻塞感，
+// 不过为了稳定性，这里保持顺序读取，但移除了循环内的渲染。
 for (let page of journalPages) {
-    // 1. 日期快速过滤
+    // A. 日期过滤
     const dateStr = page.date || page.file.name;
     const date = moment(dateStr, ["YYYY-MM-DD", "MMMM D, YYYY", "YYYY/M/D"], true);
     if (!date.isValid() || date.isBefore(MonthStart) || date.isAfter(MonthEnd)) continue;
 
-    // 2. 🚀【核心优化】先查缓存，不读文件！
-    // 获取 Obsidian 对该文件的元数据缓存
+    // B. 缓存预检查 (极快)
     const file = app.vault.getAbstractFileByPath(page.file.path);
     if (!file) continue;
-
     const fileCache = app.metadataCache.getFileCache(file);
-    // 如果缓存里没有 headers 属性，或者 headers 里找不到包含关键词的标题，直接跳过
-    // 这样就避免了 90% 不必要的硬盘读取
     let hasTargetHeader = false;
     if (fileCache && fileCache.headings) {
         hasTargetHeader = fileCache.headings.some(h => h.heading.includes(targetSection));
     }
-
     if (!hasTargetHeader) continue;
 
-    // 3. 只有确认有标题了，才进行昂贵的读取操作
+    // C. 读取文件 (耗时操作)
     const content = await app.vault.read(file);
     const lines = content.split('\n');
     let isCapturing = false;
     let capturedText = [];
 
-    // 提取内容逻辑
     for (let line of lines) {
-        // 兼容带 Emoji 或不带的情况
         if (line.trim().includes(targetSection) && line.trim().startsWith("#")) {
             isCapturing = true;
             continue;
@@ -165,60 +162,44 @@ for (let page of journalPages) {
         if (isCapturing) capturedText.push(line);
     }
 
-    const rawText = capturedText.join('\n');
-    // 再次过滤空内容
-    if (/[a-zA-Z0-9\u4e00-\u9fa5]/.test(rawText)) {
-        reflectionResults.push({
-            link: page.file.link,
-            dateObj: date,
-            text: rawText.trim()
-        });
+    const rawText = capturedText.join('\n').trim();
+
+    // D. 存入内存，而不是直接渲染
+    if (rawText.length > 0) {
+        reflectionCount++;
+        // 拼接显示内容
+        displayMarkdown += `> [!QUOTE]+ ${page.file.link}\n> ${rawText.replace(/\n/g, "\n> ")}\n\n`;
+        // 拼接AI内容
+        allContentForAI += `\n\n--- Date: ${date.format("YYYY-MM-DD")} ---\n${rawText}`;
     }
 }
 
-// 4. 扫描完成后，清空状态文字，或者替换为统计信息
-// container.innerText = ""; // 直接清空，不占用空间
-// 如果你想显示总结，可以用:
-container.innerText = `✅ 扫描完成，共 ${reflectionResults.length} 条`;
+// --- 4. 渲染阶段 (只执行一次 DOM 操作) ---
 
-if (reflectionResults.length === 0) {
+// 更新状态文字
+container.innerText = reflectionCount > 0
+    ? `✅ 扫描完成，共提取 ${reflectionCount} 天记录`
+    : "✅ 扫描完成，本月无相关记录";
+
+if (reflectionCount === 0) {
     dv.paragraph("> *No reflections found for this month.*");
 } else {
-    reflectionResults.sort((a, b) => a.dateObj - b.dateObj);
+    // 一次性渲染所有引用块！解决 Reflow 问题
+    dv.paragraph(`**📅 提取结果列表：**`);
+    dv.paragraph(displayMarkdown);
 
-    dv.paragraph(`**📅 共提取到 ${reflectionResults.length} 天的记录**`);
-    for (let item of reflectionResults) {
-        dv.paragraph(`> [!QUOTE]+ ${item.link}\n> ` + item.text.replace(/\n/g, "\n> "));
-	    // 【新增 2】将每一天的日记拼接到总变量中，加上日期方便区分
-	    allContentForAI += `\n\n--- Date: ${item.dateObj.format("YYYY-MM-DD")} ---\n${item.text}`;
-
-    }
-}
-
-// ... 上面是循环结束 ...
-
-// 【新增 3】创建一键复制按钮
-if (reflectionResults.length > 0) {
+    // 生成按钮
     const btn = dv.el("button", "📋 一键复制 Prompt + 所有日记", { cls: "ai-copy-btn" });
-
-    // 给按钮加上点击样式（可选，为了好看一点）
-    btn.style.marginTop = "15px";
-    btn.style.padding = "10px 20px";
-    btn.style.cursor = "pointer";
-    btn.style.backgroundColor = "var(--interactive-accent)";
-    btn.style.color = "var(--text-on-accent)";
-    btn.style.border = "none";
-    btn.style.borderRadius = "5px";
+    Object.assign(btn.style, {
+        marginTop: "15px", padding: "10px 20px", cursor: "pointer",
+        backgroundColor: "var(--interactive-accent)", color: "var(--text-on-accent)",
+        border: "none", borderRadius: "5px"
+    });
 
     btn.onclick = () => {
-        // 1. 拼接最终的 Payload：Prompt在前，日记内容在后
         const finalPayload = prompt_text + "\n\n" + allContentForAI;
-
-        // 2. 写入剪贴板
         navigator.clipboard.writeText(finalPayload).then(() => {
-            // 3. 复制成功的反馈
-            btn.innerText = "✅ 已复制！快去发给 AI 吧";
-            // 2秒后恢复原状
+            btn.innerText = "✅ 已复制！";
             setTimeout(() => { btn.innerText = "📋 一键复制 Prompt + 所有日记"; }, 2000);
         });
     };
@@ -232,34 +213,21 @@ if (reflectionResults.length > 0) {
 ```dataviewjs
 /**
  * =================================================================================
- * MONTHLY TASK ANALYTICS ENGINE (Refactored & Fixed)
+ * MONTHLY TASK ANALYTICS (Optimized Batch Rendering)
  * =================================================================================
  */
-
 const moment = window.moment;
 
-// ==========================================================
-// 1. CONFIGURATION
-// ==========================================================
-
-// 🟢 [USER CONFIG] Projects to separate
-const SEPARATE_PROJECT_LIST = ["project_family", "project_life"];
-
-// ==========================================================
-// 2. DATA COLLECTION ENGINE (Monthly Mode)
-// ==========================================================
-
-// Inputs from Templater
+// --- Config ---
+const SEPARATE_PROJECT_LIST = ["Project_Families", "FamilyPersonalCare", "Project_Healthy", "Project_Kids", "Project_家庭各类设备"];
 const inputYear = "<% year %>";
-const inputMonth = "<% monthNum %>"; // e.g., "2"
+const inputMonthStr = "<% monthNum %>";
 
-// Calculate Time Window
-const periodStart = moment(`${inputYear}-${inputMonth}`, "YYYY-M").startOf('month');
-const periodEnd = moment(`${inputYear}-${inputMonth}`, "YYYY-M").endOf('month');
+// --- Data Prep ---
+const periodStart = moment(`${inputYear}-${inputMonthStr}`, "YYYY-M").startOf('month');
+const periodEnd = moment(`${inputYear}-${inputMonthStr}`, "YYYY-M").endOf('month');
 
-// --- Helper Functions ---
-
-// 1. Clean Project Name
+// Helpers
 function getCleanProjectName(rawName) {
     if (!rawName) return "Unknown Project";
     let str = String(rawName);
@@ -267,94 +235,88 @@ function getCleanProjectName(rawName) {
     return clean.split("/").pop().trim();
 }
 
-// 2. Check Separation
 function isSeparatedProject(rawProjectName) {
     if (SEPARATE_PROJECT_LIST.length === 0) return false;
     const cleanName = getCleanProjectName(rawProjectName).toLowerCase();
-    return SEPARATE_PROJECT_LIST.some(keyword =>
-        cleanName.includes(keyword.toLowerCase())
-    );
+    return SEPARATE_PROJECT_LIST.some(k => cleanName.includes(k.toLowerCase()));
 }
 
+// --- Batch Data Collection ---
 let allSlots = [];
+// 预先获取所有日记，避免在循环中重复查询
+const dailyPages = dv.pages('#journal/daily');
 
-// --- Main Loop ---
-for (let daily of dv.pages('#journal/daily')) {
+for (let daily of dailyPages) {
+    // 快速跳过无任务文件
+    if (!daily.file.tasks || daily.file.tasks.length === 0) continue;
+
     const dateStr = daily.date || daily.file.name;
     const date = moment(dateStr, ["YYYY-MM-DD", "MMMM D, YYYY", "YYYY/M/D"]);
 
-    // Filter by Month Window
+    // 这里的 isValid 检查很重要，防止无效日期导致后续计算错误
     if (!date.isValid() || date.isBefore(periodStart) || date.isAfter(periodEnd)) continue;
-    if (!daily.file.tasks) continue;
 
     for (let t of daily.file.tasks) {
         if (!t.task_uuid || !t.start || !t.end) continue;
 
-        let start = new Date("1970-01-01T" + t.start.padStart(5, '0'));
-        let end = new Date("1970-01-01T" + t.end.padStart(5, '0'));
-        let duration = Math.round((end - start) / (1000 * 60));
+        // 放在 try-catch 块中防止个别坏数据卡死整个脚本
+        try {
+            let start = new Date("1970-01-01T" + t.start.padStart(5, '0'));
+            let end = new Date("1970-01-01T" + t.end.padStart(5, '0'));
+            let duration = Math.round((end - start) / (1000 * 60));
+            if (duration <= 0) continue;
 
-        if (duration <= 0) continue;
+            let taskPage = dv.pages().where(p => p.task_uuid === t.task_uuid).first();
+            let taskName = taskPage?.task_name || taskPage?.file?.name || t.text;
+            let taskFile = taskPage?.file?.name;
 
-        // Extract Metadata
-        let taskPage = dv.pages().where(p => p.task_uuid === t.task_uuid).first();
-        let taskName = taskPage?.task_name || taskPage?.file?.name || t.text;
-        let taskFile = taskPage?.file?.name;
+            let projectName = taskPage?.project
+                ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project)
+                : "Unknown Project";
+            let projectFile = null;
+            if (typeof projectName === "string" && projectName.startsWith("[[")) {
+                projectFile = projectName.replace(/^\[\[|\]\]$/g, "");
+            }
 
-        let projectName = taskPage?.project
-            ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project)
-            : "Unknown Project";
-        let projectFile = null;
-        if (typeof projectName === "string" && projectName.startsWith("[[")) {
-            projectFile = projectName.replace(/^\[\[|\]\]$/g, "");
+            let linkPath = daily.file.path;
+            let anchor = (t.header && t.header.subpath) ? "#" + t.header.subpath : "";
+
+            allSlots.push({
+                dateStr: date.format("YYYY-MM-DD"), // 用于排序
+                start: t.start,
+                end: t.end,
+                duration: duration,
+                taskName: taskName,
+                taskFile: taskFile,
+                projectName: projectName,
+                projectFile: projectFile,
+                linkPath: linkPath,
+                anchor: anchor,
+                text: t.text
+            });
+        } catch (e) {
+            console.warn("Skipping malformed task:", t.text, e);
         }
-
-        let linkPath = daily.file.path;
-        let anchor = (t.header && t.header.subpath) ? "#" + t.header.subpath : "";
-
-        allSlots.push({
-            dateObj: date,
-            dateStr: date.format("YYYY-MM-DD"),
-            start: t.start,
-            end: t.end,
-            duration: duration,
-            taskName: taskName,
-            taskFile: taskFile,
-            projectName: projectName,
-            projectFile: projectFile,
-            linkPath: linkPath,
-            anchor: anchor,
-            text: t.text
-        });
     }
 }
 
-// Sort
+// 排序 (CPU操作，很快)
 allSlots.sort((a, b) => a.dateStr.localeCompare(b.dateStr) || a.start.localeCompare(b.start));
 
-// ==========================================================
-// 3. SEPARATION LOGIC
-// ==========================================================
-
+// --- Grouping ---
 let mainGroupSlots = [];
 let separatedGroupSlots = [];
 
 if (SEPARATE_PROJECT_LIST.length > 0) {
-    allSlots.forEach(slot => {
-        if (isSeparatedProject(slot.projectName)) {
-            separatedGroupSlots.push(slot);
-        } else {
-            mainGroupSlots.push(slot);
-        }
-    });
+    for (let slot of allSlots) {
+        if (isSeparatedProject(slot.projectName)) separatedGroupSlots.push(slot);
+        else mainGroupSlots.push(slot);
+    }
 } else {
     mainGroupSlots = allSlots;
 }
 
-// ==========================================================
-// 4. RENDERING ENGINE
-// ==========================================================
-
+// --- Renderer Function (Updated for Performance) ---
 function renderDashboard(sectionTitle, taskList, icon) {
     dv.header(2, `${icon} ${sectionTitle}`);
 
@@ -364,29 +326,29 @@ function renderDashboard(sectionTitle, taskList, icon) {
         return;
     }
 
-    // A. Table
+    // 1. 生成表格数据 (纯内存操作)
     let tableRows = taskList.map(s => {
-        let projectLink = s.projectFile ? `[[${s.projectFile}|${getCleanProjectName(s.projectName)}]]` : s.projectName;
+        let cleanProj = getCleanProjectName(s.projectName);
+        let projectLink = s.projectFile ? `[[${s.projectFile}|${cleanProj}]]` : cleanProj;
         let taskLink = s.taskFile ? `[[${s.taskFile}|${s.taskName}]]` : s.taskName;
+        // 使用 HTML 链接而非 Dataview 链接有时能提高渲染性能，但这里保持原样
         let dateClickable = `[[${s.linkPath}${s.anchor}|${s.dateStr}]]`;
         let timeClickable = `[[${s.linkPath}${s.anchor}|${s.start}-${s.end}]]`;
         let displayText = s.text.length > 50 ? s.text.substring(0, 47) + "..." : s.text;
-
         return [dateClickable, timeClickable, projectLink, taskLink, displayText, s.duration + " min"];
     });
 
+    // 2. 渲染表格 (一次重绘)
     dv.header(4, `📅 Time Logs (${taskList.length} records)`);
     dv.table(["Date", "Time", "Project", "Task", "Desc", "Duration"], tableRows);
 
-    // B. Stats
+    // 3. 统计计算
     let groupTotalDuration = taskList.reduce((sum, s) => sum + s.duration, 0);
     let projectTotals = {};
-
-    taskList.forEach(s => {
+    for (let s of taskList) {
         let cleanName = getCleanProjectName(s.projectName);
-        if (!projectTotals[cleanName]) projectTotals[cleanName] = 0;
-        projectTotals[cleanName] += s.duration;
-    });
+        projectTotals[cleanName] = (projectTotals[cleanName] || 0) + s.duration;
+    }
 
     let statsRows = Object.entries(projectTotals)
         .map(([name, total]) => ({ name, total }))
@@ -395,9 +357,8 @@ function renderDashboard(sectionTitle, taskList, icon) {
     let statsTableRows = statsRows.map(row => {
         let h = Math.floor(row.total / 60);
         let m = row.total % 60;
-        let timeString = h > 0 ? `${row.total} min (${h}h ${m}m)` : `${row.total} min`;
         let percent = groupTotalDuration > 0 ? (row.total / groupTotalDuration * 100).toFixed(1) + "%" : "0.0%";
-        return [row.name, timeString, percent];
+        return [row.name, `${row.total} min (${h}h ${m}m)`, percent];
     });
 
     dv.header(4, "📊 Project Statistics");
@@ -407,117 +368,65 @@ function renderDashboard(sectionTitle, taskList, icon) {
     let totalM = groupTotalDuration % 60;
     dv.paragraph(`**${sectionTitle} Total:** ${groupTotalDuration} min (${totalH}h ${totalM}m)`);
 
-    // C. Charts
-    let chartData = statsRows.map(p => ({
-        project: p.name,
-        hours: Number((p.total / 60).toFixed(1))
-    }));
+    // 4. 图表渲染 (防御性检查)
+    // 只有当有数据时才渲染图表，防止ChartsView报错
+    if (statsRows.length > 0) {
+        let chartData = statsRows.map(p => ({
+            project: p.name,
+            hours: Number((p.total / 60).toFixed(1))
+        }));
 
-    // Pie Chart
-    let pieYamlData = chartData.map(p => {
-        let safeName = p.project.replace(/"/g, '\\"');
-        return `  - type: "${safeName}"\n    value: ${p.hours}`;
-    }).join("\n");
-
-    dv.el("div", `
-\`\`\`chartsview
+        // 构造 YAML 字符串
+        // Pie
+        let pieYaml = chartData.map(p => `  - type: "${p.project.replace(/"/g, '\\"')}"\n    value: ${p.hours}`).join("\n");
+        dv.el("div", `\`\`\`chartsview
 type: Pie
 data:
-${pieYamlData}
+${pieYaml}
 options:
   angleField: value
   colorField: type
   innerRadius: 0.6
-  label:
-    type: inner
-    content: "{percentage}"
-  statistic:
-    title: false
-    content:
-      content: '${sectionTitle}'
-      style:
-        fontSize: 16
-\`\`\`
-`);
+  label: { type: inner, content: "{percentage}" }
+  statistic: { title: false, content: { content: '${sectionTitle}', style: { fontSize: 16 } } }
+\`\`\``);
 
-    // Column Chart
-    let colYamlData = chartData.map(p => {
-        let safeName = p.project.replace(/"/g, '\\"');
-        return `  - project: "${safeName}"\n    hours: ${p.hours}`;
-    }).join("\n");
-
-    dv.el("div", `
-\`\`\`chartsview
+        // Column
+        let colYaml = chartData.map(p => `  - project: "${p.project.replace(/"/g, '\\"')}"\n    hours: ${p.hours}`).join("\n");
+        dv.el("div", `\`\`\`chartsview
 type: Column
 data:
-${colYamlData}
+${colYaml}
 options:
-  isStack: false
   xField: project
   yField: hours
   seriesField: project
-  label:
-    position: top
-    style:
-      fontSize: 12
-      fill: '#FFFFFF'
-  xAxis:
-    label:
-      autoRotate: true
-      rotate: 45
-      autoHide: false
-  yAxis:
-    title:
-      text: 'Hours'
+  label: { position: top, style: { fill: '#FFFFFF' } }
+  xAxis: { label: { autoRotate: true, rotate: 45, autoHide: false } }
   columnWidthRatio: 0.6
   maxColumnWidth: 60
-  animation: true
-\`\`\`
-`);
+\`\`\``);
 
-    // Bar Chart (Horizontal)
-    let barYamlData = chartData.map(p => {
-        let safeName = p.project.replace(/"/g, '\\"');
-        return `  - project: "${safeName}"\n    hours: ${p.hours}`;
-    }).join("\n");
-
-    dv.el("div", `
-\`\`\`chartsview
+        // Bar
+        dv.el("div", `\`\`\`chartsview
 type: Bar
 data:
-${barYamlData}
+${colYaml}
 options:
   yField: project
   xField: hours
   seriesField: project
   barWidthRatio: 0.8
   maxBarWidth: 40
-  label:
-    position: right
-    offset: 10
-    style:
-      fontSize: 13
-      fill: "#FFFFFF"
-  xAxis:
-    title:
-      text: "Hours"
-  yAxis:
-    label:
-      style:
-        fontSize: 12
-  legend:
-    position: "top-right"
-  animation: true
-\`\`\`
-`);
+  label: { position: right, offset: 10, style: { fill: "#FFFFFF" } }
+  legend: { position: "top-right" }
+\`\`\``);
+    }
 
     dv.el("hr", "");
 }
 
-// ==========================================================
-// 5. EXECUTION
-// ==========================================================
-
+// --- Execution ---
 if (SEPARATE_PROJECT_LIST.length > 0) {
     renderDashboard("Focused / Personal Projects", separatedGroupSlots, "🛡️");
     renderDashboard("Main / Work Projects", mainGroupSlots, "💼");
