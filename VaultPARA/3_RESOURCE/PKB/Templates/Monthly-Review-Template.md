@@ -313,24 +313,31 @@ for (let [project, total] of Object.entries(projectTotals)) {
 }
 
 projectRows.sort((a, b) => b[1] - a[1]);
-// 修改开始：增加小时显示逻辑
+
+// [NEW] Calculate total duration sum for percentage math
+let totalDuration = projectRows.reduce((sum, row) => sum + row[1], 0);
+
+// [MODIFIED] Format rows and add percentage calculation
 let formattedProjectRows = projectRows.map(row => {
     let total = row[1];
     let h = Math.floor(total / 60);
     let m = total % 60;
 
-    // 如果超过1小时，显示 "总分钟 (X小时 Y分钟)"，否则只显示分钟
+    // Format time display
     let timeString = (h > 0)
         ? `${total} min (${h}hour ${m}min)`
         : `${total} min`;
 
-    return [row[0], timeString];
+    // [NEW] Calculate Percentage (format as string with %)
+    let percent = totalDuration > 0 ? (total / totalDuration * 100).toFixed(1) + "%" : "0.0%";
+
+    // Return: [Project Name, Time String, Percentage String]
+    return [row[0], timeString, percent];
 });
-// 修改结束
 
 dv.header(3, "Project Total Time");
 if (formattedProjectRows.length > 0) {
-    dv.table(["Project", "Total Time"], formattedProjectRows);
+    dv.table(["Project", "Total Time", "Percent"], formattedProjectRows);
 } else {
     dv.paragraph("No project found。");
 }
