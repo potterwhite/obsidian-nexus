@@ -230,152 +230,196 @@ if (reflectionResults.length > 0) {
 ## ⏱️ Monthly Task Time Statistics
 
 ```dataviewjs
+/**
+ * =================================================================================
+ * MONTHLY TASK ANALYTICS ENGINE (Refactored & Fixed)
+ * =================================================================================
+ */
+
 const moment = window.moment;
 
-// 获取本月起止
+// ==========================================================
+// 1. CONFIGURATION
+// ==========================================================
+
+// 🟢 [USER CONFIG] Projects to separate
+const SEPARATE_PROJECT_LIST = ["project_family", "project_life"];
+
+// ==========================================================
+// 2. DATA COLLECTION ENGINE (Monthly Mode)
+// ==========================================================
+
+// Inputs from Templater
 const inputYear = "<% year %>";
-const inputMonth = "<% monthNum %>";
-const monthStart = moment().year(Number(inputYear)).month(Number(inputMonth) - 1).startOf("month");
-const monthEnd = moment().year(Number(inputYear)).month(Number(inputMonth) - 1).endOf("month");
+const inputMonth = "<% monthNum %>"; // e.g., "2"
 
-// 收集所有打卡记录
-let slots = [];
+// Calculate Time Window
+const periodStart = moment(`${inputYear}-${inputMonth}`, "YYYY-M").startOf('month');
+const periodEnd = moment(`${inputYear}-${inputMonth}`, "YYYY-M").endOf('month');
 
+// --- Helper Functions ---
+
+// 1. Clean Project Name
+function getCleanProjectName(rawName) {
+    if (!rawName) return "Unknown Project";
+    let str = String(rawName);
+    let clean = str.replace(/^\[\[|\]\]$/g, "").split("|")[0];
+    return clean.split("/").pop().trim();
+}
+
+// 2. Check Separation
+function isSeparatedProject(rawProjectName) {
+    if (SEPARATE_PROJECT_LIST.length === 0) return false;
+    const cleanName = getCleanProjectName(rawProjectName).toLowerCase();
+    return SEPARATE_PROJECT_LIST.some(keyword =>
+        cleanName.includes(keyword.toLowerCase())
+    );
+}
+
+let allSlots = [];
+
+// --- Main Loop ---
 for (let daily of dv.pages('#journal/daily')) {
     const dateStr = daily.date || daily.file.name;
     const date = moment(dateStr, ["YYYY-MM-DD", "MMMM D, YYYY", "YYYY/M/D"]);
-    if (!date.isValid() || date.isBefore(monthStart) || date.isAfter(monthEnd)) continue;
+
+    // Filter by Month Window
+    if (!date.isValid() || date.isBefore(periodStart) || date.isAfter(periodEnd)) continue;
     if (!daily.file.tasks) continue;
 
     for (let t of daily.file.tasks) {
         if (!t.task_uuid || !t.start || !t.end) continue;
+
         let start = new Date("1970-01-01T" + t.start.padStart(5, '0'));
         let end = new Date("1970-01-01T" + t.end.padStart(5, '0'));
         let duration = Math.round((end - start) / (1000 * 60));
+
         if (duration <= 0) continue;
 
+        // Extract Metadata
         let taskPage = dv.pages().where(p => p.task_uuid === t.task_uuid).first();
         let taskName = taskPage?.task_name || taskPage?.file?.name || t.text;
         let taskFile = taskPage?.file?.name;
-        let projectName = taskPage?.project ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project) : "Unknown Project";
+
+        let projectName = taskPage?.project
+            ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project)
+            : "Unknown Project";
         let projectFile = null;
         if (typeof projectName === "string" && projectName.startsWith("[[")) {
             projectFile = projectName.replace(/^\[\[|\]\]$/g, "");
         }
-        slots.push({
-            date: date.format("YYYY-MM-DD"),
+
+        let linkPath = daily.file.path;
+        let anchor = (t.header && t.header.subpath) ? "#" + t.header.subpath : "";
+
+        allSlots.push({
+            dateObj: date,
+            dateStr: date.format("YYYY-MM-DD"),
             start: t.start,
             end: t.end,
-            duration,
-            taskName,
-            taskFile,
-            projectName,
-            projectFile,
+            duration: duration,
+            taskName: taskName,
+            taskFile: taskFile,
+            projectName: projectName,
+            projectFile: projectFile,
+            linkPath: linkPath,
+            anchor: anchor,
             text: t.text
         });
     }
 }
 
-// 排序，默认升序（asc），如需降序改为 slots.sort((a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start));
-slots.sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
+// Sort
+allSlots.sort((a, b) => a.dateStr.localeCompare(b.dateStr) || a.start.localeCompare(b.start));
 
-// 输出详细打卡表格
-let rows = [];
-for (let s of slots) {
-    let projectLink = s.projectFile ? `[[${s.projectFile}|${s.projectName.replace(/^\[\[|\]\]$/g, "")}]]` : s.projectName;
-    let taskLink = s.taskFile ? `[[${s.taskFile}|${s.taskName}]]` : s.taskName;
-    let displayText = s.text.length > 50 ? s.text.substring(0, 47) + "..." : s.text;
-    rows.push([
-        s.date,
-        `${s.start}-${s.end}`,
-        projectLink,
-        taskLink,
-        displayText,
-        s.duration + " min"
-    ]);
-}
+// ==========================================================
+// 3. SEPARATION LOGIC
+// ==========================================================
 
-dv.header(3, `Monthly Task Time Slots (${inputYear}-${inputMonth})`);
-dv.table(["Date", "Time", "Project", "Task", "Description", "Duration"], rows);
+let mainGroupSlots = [];
+let separatedGroupSlots = [];
 
-// 统计每个 project 的总耗时
-let projectTotals = {};
-for (let s of slots) {
-    let projectKey = s.projectFile ? `[[${s.projectFile}|${s.projectName.replace(/^\[\[|\]\]$/g, "")}]]` : s.projectName;
-    if (!projectTotals[projectKey]) projectTotals[projectKey] = 0;
-    projectTotals[projectKey] += s.duration;
-}
-
-// 输出 project 总耗时表
-let projectRows = [];
-for (let [project, total] of Object.entries(projectTotals)) {
-    projectRows.push([project, total]);
-}
-
-projectRows.sort((a, b) => b[1] - a[1]);
-
-// [NEW] Calculate total duration sum for percentage math
-let totalDuration = projectRows.reduce((sum, row) => sum + row[1], 0);
-
-// [MODIFIED] Format rows and add percentage calculation
-let formattedProjectRows = projectRows.map(row => {
-    let total = row[1];
-    let h = Math.floor(total / 60);
-    let m = total % 60;
-
-    // Format time display
-    let timeString = (h > 0)
-        ? `${total} min (${h}hour ${m}min)`
-        : `${total} min`;
-
-    // [NEW] Calculate Percentage (format as string with %)
-    let percent = totalDuration > 0 ? (total / totalDuration * 100).toFixed(1) + "%" : "0.0%";
-
-    // Return: [Project Name, Time String, Percentage String]
-    return [row[0], timeString, percent];
-});
-
-dv.header(3, "Project Total Time");
-if (formattedProjectRows.length > 0) {
-    dv.table(["Project", "Total Time", "Percent"], formattedProjectRows);
+if (SEPARATE_PROJECT_LIST.length > 0) {
+    allSlots.forEach(slot => {
+        if (isSeparatedProject(slot.projectName)) {
+            separatedGroupSlots.push(slot);
+        } else {
+            mainGroupSlots.push(slot);
+        }
+    });
 } else {
-    dv.paragraph("No project found。");
+    mainGroupSlots = allSlots;
 }
 
+// ==========================================================
+// 4. RENDERING ENGINE
+// ==========================================================
 
-// 总结统计
-let monthTotal = slots.reduce((sum, s) => sum + s.duration, 0);
+function renderDashboard(sectionTitle, taskList, icon) {
+    dv.header(2, `${icon} ${sectionTitle}`);
 
-// === 准备图表数据：只取项目名最后一段 + 小时数 ===
-let projectData = [];
-const threshold = monthTotal * 0.03; // 仍保留阈值，用于过滤太小的项目（而不是归入“其他”）
+    if (taskList.length === 0) {
+        dv.paragraph(`*No tasks found for ${sectionTitle} this month.*`);
+        dv.el("hr", "");
+        return;
+    }
 
-for (let [projectLink, totalMin] of Object.entries(projectTotals)) {
-    // 提取干净的项目名：去掉 [[ ]] 和 | 显示文字，取路径最后一段
-    let fullName = projectLink.replace(/^\[\[|\]\]$/g, "").replace(/\|.*$/, "").trim();
-    let projectName = fullName.split("/").pop().trim(); // 只取最后一段
-    if (projectName === "") projectName = "Unknown Project";
+    // A. Table
+    let tableRows = taskList.map(s => {
+        let projectLink = s.projectFile ? `[[${s.projectFile}|${getCleanProjectName(s.projectName)}]]` : s.projectName;
+        let taskLink = s.taskFile ? `[[${s.taskFile}|${s.taskName}]]` : s.taskName;
+        let dateClickable = `[[${s.linkPath}${s.anchor}|${s.dateStr}]]`;
+        let timeClickable = `[[${s.linkPath}${s.anchor}|${s.start}-${s.end}]]`;
+        let displayText = s.text.length > 50 ? s.text.substring(0, 47) + "..." : s.text;
 
-    let hours = Math.round(totalMin / 6) / 10; // 保留一位小数
+        return [dateClickable, timeClickable, projectLink, taskLink, displayText, s.duration + " min"];
+    });
 
-    /*// 只保留占总时长 3% 以上的项目（小项目直接忽略，不显示“其他”）
-    if (totalMin >= threshold) {
-        projectData.push({ project: projectName, hours: hours });
-    }*/
-    projectData.push({ project: projectName, hours: hours });
-}
-// 从大到小排序
-projectData.sort((a, b) => b.hours - a.hours);
+    dv.header(4, `📅 Time Logs (${taskList.length} records)`);
+    dv.table(["Date", "Time", "Project", "Task", "Desc", "Duration"], tableRows);
 
-// === 饼图：项目时间占比 ===
-dv.header(3, "项目时间占比（饼图）");
+    // B. Stats
+    let groupTotalDuration = taskList.reduce((sum, s) => sum + s.duration, 0);
+    let projectTotals = {};
 
-let pieYamlData = projectData.map(p => {
-    let safeName = p.project.replace(/"/g, '\\"');
-    return `  - type: "${safeName}"\n    value: ${p.hours.toFixed(1)}`;
-}).join("\n");
+    taskList.forEach(s => {
+        let cleanName = getCleanProjectName(s.projectName);
+        if (!projectTotals[cleanName]) projectTotals[cleanName] = 0;
+        projectTotals[cleanName] += s.duration;
+    });
 
-dv.el("div", `
+    let statsRows = Object.entries(projectTotals)
+        .map(([name, total]) => ({ name, total }))
+        .sort((a, b) => b.total - a.total);
+
+    let statsTableRows = statsRows.map(row => {
+        let h = Math.floor(row.total / 60);
+        let m = row.total % 60;
+        let timeString = h > 0 ? `${row.total} min (${h}h ${m}m)` : `${row.total} min`;
+        let percent = groupTotalDuration > 0 ? (row.total / groupTotalDuration * 100).toFixed(1) + "%" : "0.0%";
+        return [row.name, timeString, percent];
+    });
+
+    dv.header(4, "📊 Project Statistics");
+    dv.table(["Project", "Total Duration", "Percentage"], statsTableRows);
+
+    let totalH = Math.floor(groupTotalDuration / 60);
+    let totalM = groupTotalDuration % 60;
+    dv.paragraph(`**${sectionTitle} Total:** ${groupTotalDuration} min (${totalH}h ${totalM}m)`);
+
+    // C. Charts
+    let chartData = statsRows.map(p => ({
+        project: p.name,
+        hours: Number((p.total / 60).toFixed(1))
+    }));
+
+    // Pie Chart
+    let pieYamlData = chartData.map(p => {
+        let safeName = p.project.replace(/"/g, '\\"');
+        return `  - type: "${safeName}"\n    value: ${p.hours}`;
+    }).join("\n");
+
+    dv.el("div", `
 \`\`\`chartsview
 type: Pie
 data:
@@ -390,23 +434,23 @@ options:
   statistic:
     title: false
     content:
-      content: '总 ${(monthTotal / 60).toFixed(1)} h'
+      content: '${sectionTitle}'
+      style:
+        fontSize: 16
 \`\`\`
 `);
 
-// === 柱状图：项目总时长（已修复）===
-dv.header(3, "项目总时长（柱状图）");
+    // Column Chart
+    let colYamlData = chartData.map(p => {
+        let safeName = p.project.replace(/"/g, '\\"');
+        return `  - project: "${safeName}"\n    hours: ${p.hours}`;
+    }).join("\n");
 
-let columnYamlData = projectData.map(p => {
-    let safeName = p.project.replace(/"/g, '\\"');
-    return `  - project: "${safeName}"\n    hours: ${p.hours.toFixed(1)}`;
-}).join("\n");
-
-dv.el("div", `
+    dv.el("div", `
 \`\`\`chartsview
 type: Column
 data:
-${columnYamlData}
+${colYamlData}
 options:
   isStack: false
   xField: project
@@ -417,32 +461,27 @@ options:
     style:
       fontSize: 12
       fill: '#FFFFFF'
-      opacity: 0.9
   xAxis:
     label:
       autoRotate: true
-      rotate: 45          # 强制45度倾斜，彻底避免重叠
-      autoHide: false     # 关闭自动隐藏，所有标签都显示
-      style:
-        fontSize: 11
+      rotate: 45
+      autoHide: false
   yAxis:
     title:
-      text: '小时数'
-  columnWidthRatio: 0.6   # 柱子宽度适中
-  maxColumnWidth: 60      # 防止柱子太宽
+      text: 'Hours'
+  columnWidthRatio: 0.6
+  maxColumnWidth: 60
   animation: true
 \`\`\`
 `);
 
-// === 项目总时长（水平条形图 - 已修复）===
-dv.header(3, "项目总时长（水平条形图）");
+    // Bar Chart (Horizontal)
+    let barYamlData = chartData.map(p => {
+        let safeName = p.project.replace(/"/g, '\\"');
+        return `  - project: "${safeName}"\n    hours: ${p.hours}`;
+    }).join("\n");
 
-let barYamlData = projectData.map(p => {
-    let safeName = p.project.replace(/"/g, '\\"');
-    return `  - project: "${safeName}"\n    hours: ${p.hours.toFixed(1)}`;
-}).join("\n");
-
-dv.el("div", `
+    dv.el("div", `
 \`\`\`chartsview
 type: Bar
 data:
@@ -454,14 +493,14 @@ options:
   barWidthRatio: 0.8
   maxBarWidth: 40
   label:
-    position: right    # 让数字显示在条形图右侧
+    position: right
     offset: 10
     style:
       fontSize: 13
-      fill: "#FFFFFF"  # 数字颜色
+      fill: "#FFFFFF"
   xAxis:
     title:
-      text: "小时数"
+      text: "Hours"
   yAxis:
     label:
       style:
@@ -472,10 +511,19 @@ options:
 \`\`\`
 `);
 
-// === 总计 ===
-dv.paragraph(`**本月总计：${monthTotal} 分钟（${(monthTotal / 60).toFixed(1)} 小时）**`);
+    dv.el("hr", "");
+}
 
+// ==========================================================
+// 5. EXECUTION
+// ==========================================================
 
+if (SEPARATE_PROJECT_LIST.length > 0) {
+    renderDashboard("Focused / Personal Projects", separatedGroupSlots, "🛡️");
+    renderDashboard("Main / Work Projects", mainGroupSlots, "💼");
+} else {
+    renderDashboard("Monthly Overview (All Projects)", mainGroupSlots, "🚀");
+}
 ```
 
 ---
