@@ -2,7 +2,7 @@
 # 全局唯一ID，建议用uuid或项目名+简短描述
 task_uuid: <%* tR += tp.user.uuid() %>
 task_name: <% tp.file.title %>
-project: 
+project:
   - "[[Project_Markdown_FILE_NAME]]"
 created: <% tp.date.now("YYYY-MM-DD") %>
 status: todo                          # todo, doing, done, cancelled

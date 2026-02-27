@@ -11,15 +11,15 @@ const defaultDate = moment().format("YYYY-MM-DD");
 while (true) {
     // 弹出输入框
     inputDate = await tp.system.prompt("请输入日期 (格式 YYYY-MM-DD，直接回车默认今天):", defaultDate);
-    
+
     // 如果用户取消或直接回车，使用默认值
     if (inputDate === null || inputDate === "") {
         inputDate = defaultDate;
     }
-    
+
     // 验证格式是否正确 (必须是有效的 YYYY-MM-DD)
     if (moment(inputDate, "YYYY-MM-DD", true).isValid()) break;
-    
+
     // 如果无效，提示错误并重新循环
     await tp.system.prompt("日期无效，请使用 YYYY-MM-DD 格式 (例如 2025-01-12)。");
 }
@@ -36,7 +36,7 @@ const dayOfWeek = targetDate.format("dddd");      // 例如: Monday
 const dateISO = targetDate.format("YYYY-MM-DD");  // 例如: 2025-01-12
 
 // 建议文件名 (如果你希望自动重命名文件，可以使用这个变量)
-const suggestedFileName = fullDate; 
+const suggestedFileName = fullDate;
 
 // ==========================================================
 // 3. 动态输出 Frontmatter
@@ -51,10 +51,10 @@ tR += "---\n";
 
 // 可选：自动重命名当前文件为 "January 12, 2025" 这种格式
 // 如果不需要自动重命名，可以删除下面这一行
-await tp.file.rename(fullDate); 
+await tp.file.rename(fullDate);
 %>
 # Daily_Log - <% fullDate %> (<% dayOfWeek %>)
- 
+
 
 ## 🛐 今日灵修 (Daily Devotion)
 
@@ -179,7 +179,7 @@ let rows = tasks.map(t => {
         t.text.replace(/\(.*?::.*?\)/g, "").trim(),
         startStr,
         endStr,
-        duration + " min",        
+        duration + " min",
         taskNameStr
     ];
 });
