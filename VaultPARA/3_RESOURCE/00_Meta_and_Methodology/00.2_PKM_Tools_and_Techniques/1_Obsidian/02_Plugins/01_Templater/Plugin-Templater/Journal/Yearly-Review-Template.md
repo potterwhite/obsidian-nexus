@@ -53,7 +53,7 @@ tags: summary/year
 // ==========================================================
 const moment = window.moment;
 // 🟢 请确保这里的年份和 Part 2 一致，或者手动写死 "2025"
-const inputYear = "<% year %>";
+const inputYear = "<% year %>"; 
 const targetSection = "想法与反思"; // 你的标题关键词，不需要写 #
 
 const yearStart = moment().year(Number(inputYear)).startOf("year");
@@ -76,7 +76,7 @@ for (let page of journalPages) {
     // 获取 Obsidian 对该文件的元数据缓存
     const file = app.vault.getAbstractFileByPath(page.file.path);
     if (!file) continue;
-
+    
     const fileCache = app.metadataCache.getFileCache(file);
     // 如果缓存里没有 headers 属性，或者 headers 里找不到包含关键词的标题，直接跳过
     // 这样就避免了 90% 不必要的硬盘读取
@@ -92,7 +92,7 @@ for (let page of journalPages) {
     const lines = content.split('\n');
     let isCapturing = false;
     let capturedText = [];
-
+    
     // 提取内容逻辑
     for (let line of lines) {
         // 兼容带 Emoji 或不带的情况
@@ -103,7 +103,7 @@ for (let page of journalPages) {
         if (isCapturing && line.trim().startsWith("## ")) break;
         if (isCapturing) capturedText.push(line);
     }
-
+    
     const rawText = capturedText.join('\n');
     // 再次过滤空内容
     if (/[a-zA-Z0-9\u4e00-\u9fa5]/.test(rawText)) {
@@ -117,7 +117,7 @@ for (let page of journalPages) {
 
 // 4. 扫描完成后，清空状态文字，或者替换为统计信息
 // container.innerText = ""; // 直接清空，不占用空间
-// 如果你想显示总结，可以用:
+// 如果你想显示总结，可以用: 
 container.innerText = `✅ 扫描完成，共 ${reflectionResults.length} 条`;
 
 if (reflectionResults.length === 0) {
@@ -155,14 +155,14 @@ let slots = [];
 for (let daily of dv.pages('#journal/daily')) {
     const dateStr = daily.date || daily.file.name;
     const date = moment(dateStr, ["YYYY-MM-DD", "MMMM D, YYYY", "YYYY/M/D"]);
-
+    
     // 过滤掉非本年度的日记
     if (!date.isValid() || date.isBefore(yearStart) || date.isAfter(yearEnd)) continue;
     if (!daily.file.tasks) continue;
 
     for (let t of daily.file.tasks) {
         if (!t.task_uuid || !t.start || !t.end) continue;
-
+        
         let start = new Date("1970-01-01T" + t.start.padStart(5, '0'));
         let end = new Date("1970-01-01T" + t.end.padStart(5, '0'));
         let duration = Math.round((end - start) / (1000 * 60));
@@ -175,7 +175,7 @@ for (let daily of dv.pages('#journal/daily')) {
         if (typeof projectName === "string" && projectName.startsWith("[[")) {
             projectFile = projectName.replace(/^\[\[|\]\]$/g, "");
         }
-
+        
         slots.push({
             dateObj: date, // 保留 moment 对象以便后续提取月份
             duration,
@@ -220,7 +220,7 @@ const monthNames = moment.months(); // ["January", "February", ...]
 for (let i = 0; i < 12; i++) {
     let mData = monthlyStats[i];
     let totalMin = mData.total;
-
+    
     // 只有当月有数据才显示，或者显示全部 12 个月（这里选择显示全部以便看空窗期）
     let hours = Math.floor(totalMin / 60);
     let mins = totalMin % 60;
@@ -290,8 +290,8 @@ for (let [projectLink, totalMin] of Object.entries(projectTotals)) {
     if (totalMin >= threshold) {
         projectData.push({ project: projectName, hours: hours });
     }*/
-    projectData.push({
-	    project: projectName,
+    projectData.push({ 
+	    project: projectName, 
 	    hours: hours,
 	    minutes: totalMin
 	});
@@ -360,7 +360,7 @@ dv.header(3, "B. 项目工时对比 (Column)");
 
 // ⚡️ 性能优化：只取前 40 名。渲染 100+ 个竖排柱状图是导致卡顿的元凶。
 // 后面的小项目在 Column 图中反正也看不见（高度太低）。
-let topProjects = projectData.slice(0, 40);
+let topProjects = projectData.slice(0, 40); 
 
 // 【关键步骤 1】专门为柱状图制作“竖排文字”数据
 // 把 "项目名称" 变成 "项\n目\n名\n称"
@@ -521,11 +521,11 @@ dv.table(
 ## 📝 Yearly Summary
 
 #### **Major Milestones:**
--
+- 
 #### **Reflections:**
--
+- 
 #### **Goals for Next Year (<% year + 1 %>):**
--
+- 
 
 ---
 

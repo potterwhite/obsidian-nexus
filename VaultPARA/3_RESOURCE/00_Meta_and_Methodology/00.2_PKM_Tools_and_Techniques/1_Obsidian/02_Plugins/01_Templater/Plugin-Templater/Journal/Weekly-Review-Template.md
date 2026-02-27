@@ -92,7 +92,7 @@ tags: summary/week
 const moment = window.moment;
 const inputYear = "<% year %>";
 const inputWeek = "<% weekNum %>";
-const targetSection = "想法与反思";
+const targetSection = "想法与反思"; 
 
 const prompt_text = `# Role
 You are an objective data analyst and archivist. Your task is to process unstructured personal diary entries and organize them into structured, factual categories. Think of yourself as a "casing" (肠衣) that shapes discrete, loose information into defined "containers."
@@ -146,7 +146,7 @@ const container = dv.el("div", `*⏳ Scanning daily notes for Week ${inputWeek}.
 
 // 3. Data Buffers (Memory only, no DOM ops yet)
 let allContentForAI = "";
-let displayMarkdown = "";
+let displayMarkdown = ""; 
 let reflectionCount = 0;
 
 const journalPages = dv.pages('#journal/daily');
@@ -197,8 +197,8 @@ for (let page of journalPages) {
 
 // --- 4. Render Phase (Executes ONCE) ---
 
-container.innerText = reflectionCount > 0
-    ? `✅ Scan complete. Found ${reflectionCount} days.`
+container.innerText = reflectionCount > 0 
+    ? `✅ Scan complete. Found ${reflectionCount} days.` 
     : "✅ Scan complete. No reflections found.";
 
 if (reflectionCount === 0) {
@@ -237,7 +237,7 @@ if (reflectionCount === 0) {
 const moment = window.moment;
 
 // --- Config ---
-const SEPARATE_PROJECT_LIST = ["project_family", "project_life"];
+const SEPARATE_PROJECT_LIST = ["Project_Families", "FamilyPersonalCare", "Project_Healthy", "Project_Kids", "Project_家庭各类设备"];
 const inputYear = "<% year %>";
 const inputWeek = "<% weekNum %>";
 
@@ -250,7 +250,7 @@ const weekEnd = moment(inputYear, "YYYY").locale('en').week(Number(inputWeek)).e
 function getCleanProjectName(rawName) {
     if (!rawName) return "Unknown Project";
     let str = String(rawName);
-    let clean = str.replace(/^\[\[|\]\]$/g, "").split("|")[0];
+    let clean = str.replace(/^\[\[|\]\]$/g, "").split("|")[0]; 
     return clean.split("/").pop().trim();
 }
 
@@ -286,15 +286,15 @@ for (let daily of dailyPages) {
             let taskPage = dv.pages().where(p => p.task_uuid === t.task_uuid).first();
             let taskName = taskPage?.task_name || taskPage?.file?.name || t.text;
             let taskFile = taskPage?.file?.name;
-
-            let projectName = taskPage?.project
-                ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project)
+            
+            let projectName = taskPage?.project 
+                ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project) 
                 : "Unknown Project";
             let projectFile = null;
             if (typeof projectName === "string" && projectName.startsWith("[[")) {
                 projectFile = projectName.replace(/^\[\[|\]\]$/g, "");
             }
-
+            
             let linkPath = daily.file.path;
             let anchor = (t.header && t.header.subpath) ? "#" + t.header.subpath : "";
 
@@ -336,7 +336,7 @@ if (SEPARATE_PROJECT_LIST.length > 0) {
 // --- Renderer Function (Updated) ---
 function renderDashboard(sectionTitle, taskList, icon) {
     dv.header(2, `${icon} ${sectionTitle}`);
-
+    
     if (taskList.length === 0) {
         dv.paragraph(`*No tasks found for ${sectionTitle} this week.*`);
         dv.el("hr", "");

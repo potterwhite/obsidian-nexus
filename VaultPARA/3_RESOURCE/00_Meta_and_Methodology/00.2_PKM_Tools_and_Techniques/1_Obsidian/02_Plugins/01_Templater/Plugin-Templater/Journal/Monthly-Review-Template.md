@@ -68,9 +68,9 @@ tags: summary/month
 const moment = window.moment;
 const inputYear = "<% year %>";
 // 月份修正：Templater输入通常是1-12，moment需要0-11，或者直接用YYYY-MM格式
-const inputMonthStr = "<% monthNum %>";
+const inputMonthStr = "<% monthNum %>"; 
 
-const targetSection = "想法与反思";
+const targetSection = "想法与反思"; 
 const prompt_text = `# Role
 You are an objective data analyst and archivist. Your task is to process unstructured personal diary entries and organize them into structured, factual categories. Think of yourself as a "casing" (肠衣) that shapes discrete, loose information into defined "containers."
 
@@ -163,7 +163,7 @@ for (let page of journalPages) {
     }
 
     const rawText = capturedText.join('\n').trim();
-
+    
     // D. 存入内存，而不是直接渲染
     if (rawText.length > 0) {
         reflectionCount++;
@@ -177,8 +177,8 @@ for (let page of journalPages) {
 // --- 4. 渲染阶段 (只执行一次 DOM 操作) ---
 
 // 更新状态文字
-container.innerText = reflectionCount > 0
-    ? `✅ 扫描完成，共提取 ${reflectionCount} 天记录`
+container.innerText = reflectionCount > 0 
+    ? `✅ 扫描完成，共提取 ${reflectionCount} 天记录` 
     : "✅ 扫描完成，本月无相关记录";
 
 if (reflectionCount === 0) {
@@ -221,7 +221,7 @@ const moment = window.moment;
 // --- Config ---
 const SEPARATE_PROJECT_LIST = ["Project_Families", "FamilyPersonalCare", "Project_Healthy", "Project_Kids", "Project_家庭各类设备"];
 const inputYear = "<% year %>";
-const inputMonthStr = "<% monthNum %>";
+const inputMonthStr = "<% monthNum %>"; 
 
 // --- Data Prep ---
 const periodStart = moment(`${inputYear}-${inputMonthStr}`, "YYYY-M").startOf('month');
@@ -231,7 +231,7 @@ const periodEnd = moment(`${inputYear}-${inputMonthStr}`, "YYYY-M").endOf('month
 function getCleanProjectName(rawName) {
     if (!rawName) return "Unknown Project";
     let str = String(rawName);
-    let clean = str.replace(/^\[\[|\]\]$/g, "").split("|")[0];
+    let clean = str.replace(/^\[\[|\]\]$/g, "").split("|")[0]; 
     return clean.split("/").pop().trim();
 }
 
@@ -252,13 +252,13 @@ for (let daily of dailyPages) {
 
     const dateStr = daily.date || daily.file.name;
     const date = moment(dateStr, ["YYYY-MM-DD", "MMMM D, YYYY", "YYYY/M/D"]);
-
+    
     // 这里的 isValid 检查很重要，防止无效日期导致后续计算错误
     if (!date.isValid() || date.isBefore(periodStart) || date.isAfter(periodEnd)) continue;
 
     for (let t of daily.file.tasks) {
         if (!t.task_uuid || !t.start || !t.end) continue;
-
+        
         // 放在 try-catch 块中防止个别坏数据卡死整个脚本
         try {
             let start = new Date("1970-01-01T" + t.start.padStart(5, '0'));
@@ -269,15 +269,15 @@ for (let daily of dailyPages) {
             let taskPage = dv.pages().where(p => p.task_uuid === t.task_uuid).first();
             let taskName = taskPage?.task_name || taskPage?.file?.name || t.text;
             let taskFile = taskPage?.file?.name;
-
-            let projectName = taskPage?.project
-                ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project)
+            
+            let projectName = taskPage?.project 
+                ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project) 
                 : "Unknown Project";
             let projectFile = null;
             if (typeof projectName === "string" && projectName.startsWith("[[")) {
                 projectFile = projectName.replace(/^\[\[|\]\]$/g, "");
             }
-
+            
             let linkPath = daily.file.path;
             let anchor = (t.header && t.header.subpath) ? "#" + t.header.subpath : "";
 
@@ -319,7 +319,7 @@ if (SEPARATE_PROJECT_LIST.length > 0) {
 // --- Renderer Function (Updated for Performance) ---
 function renderDashboard(sectionTitle, taskList, icon) {
     dv.header(2, `${icon} ${sectionTitle}`);
-
+    
     if (taskList.length === 0) {
         dv.paragraph(`*No tasks found for ${sectionTitle} this month.*`);
         dv.el("hr", "");
