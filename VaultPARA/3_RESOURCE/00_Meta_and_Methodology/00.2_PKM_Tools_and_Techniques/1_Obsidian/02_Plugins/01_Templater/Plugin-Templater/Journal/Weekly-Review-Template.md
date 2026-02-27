@@ -237,7 +237,7 @@ if (reflectionCount === 0) {
 const moment = window.moment;
 
 // --- Config ---
-const SEPARATE_PROJECT_LIST = ["project_family", "project_life"];
+const SEPARATE_PROJECT_LIST = ["Project_Families", "FamilyPersonalCare", "Project_Healthy", "Project_Kids", "Project_家庭各类设备"];
 const inputYear = "<% year %>";
 const inputWeek = "<% weekNum %>";
 
