@@ -56,6 +56,9 @@ await tp.file.rename(fullDate);
 # Daily_Log - <% fullDate %> (<% dayOfWeek %>)
 
 
+## 🛐 今日灵修 (Daily Devotion)
+
+
 ## ✅ 今日目标 (Today's Goals)
 
 ```dataviewjs
