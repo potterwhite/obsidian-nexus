@@ -454,11 +454,13 @@ if (SEPARATE_PROJECT_LIST.length > 0) {
 ## 📝 本周总结 (Weekly Summary)
 
 ### 核心进度 (Main progress):
--
+- 
+
 ### 问题与反思 (Issues & reflections):
--
+- 
+
 ### 下周计划 (Next week's plan):
--
+- 
 
 ---
 
