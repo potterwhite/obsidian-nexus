@@ -53,13 +53,11 @@ tR += "---\n";
 // 如果不需要自动重命名，可以删除下面这一行
 await tp.file.rename(fullDate);
 %>
-# Daily_Log - <% fullDate %> (<% dayOfWeek %>)
+
+# 🛐 今日灵修 (Daily Devotion)
 
 
-## 🛐 今日灵修 (Daily Devotion)
-
-
-## ✅ 今日目标 (Today's Goals)
+# ✅ 今日目标 (Today's Goals)
 
 ```dataviewjs
 // ----------------------------
@@ -99,9 +97,9 @@ if (yesterdayFile) {
 
     // 正则匹配：支持中文 "明日计划" 或 "Tomorrow's Plan"
     for (let line of lines) {
-        if (/^##\s*➡️?\s*(明日计划|Tomorrow's Plan)/i.test(line)) {
+        if (/^#\s*➡️?\s*(明日计划|Tomorrow's Plan)/i.test(line)) {
             inTomorrow = true;
-        } else if (/^## /.test(line) && inTomorrow) {
+        } else if (/^# /.test(line) && inTomorrow) {
             break; // 遇到下一个标题，停止读取
         } else if (inTomorrow && /^\s*-\s*\[.\]/.test(line)) {
             tasks.push(line);
@@ -121,7 +119,7 @@ if (yesterdayFile) {
 
 ---
 
-## ⏳ 时间块记录 (Time Blocks)
+# ⏳ 时间块记录 (Time Blocks)
 
 **请使用 Templater 插入模板 TimeBlock-Insert-Templater.md**
 
@@ -129,7 +127,7 @@ if (yesterdayFile) {
 
 ---
 
-## 📈 今日时间分析 (Time Analysis)
+# 📈 今日时间分析 (Time Analysis)
 
 ```dataviewjs
 // 1. 获取当前文件的所有带时间的任务
@@ -203,10 +201,15 @@ if (totalMinutes > 0) {
 
 ---
 
-## 💡 想法与反思 (Ideas & Reflections)
+# 💡 想法与反思 (Ideas & Reflections)
 
 ---
 
-## ➡️ 明日计划 (Tomorrow's Plan)
+# ➡️ 明日计划 (Tomorrow's Plan)
 
 - [ ]
+
+# 📓临时记录(Recording Place)
+
+
+
