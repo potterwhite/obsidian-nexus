@@ -53,13 +53,11 @@ tR += "---\n";
 // 如果不需要自动重命名，可以删除下面这一行
 await tp.file.rename(fullDate);
 %>
-# Daily_Log - <% fullDate %> (<% dayOfWeek %>)
+
+# 🛐 今日灵修 (Daily Devotion)
 
 
-## 🛐 今日灵修 (Daily Devotion)
-
-
-## ✅ 今日目标 (Today's Goals)
+# ✅ 今日目标 (Today's Goals)
 
 ```dataviewjs
 // ----------------------------
@@ -99,9 +97,9 @@ if (yesterdayFile) {
 
     // 正则匹配：支持中文 "明日计划" 或 "Tomorrow's Plan"
     for (let line of lines) {
-        if (/^##\s*➡️?\s*(明日计划|Tomorrow's Plan)/i.test(line)) {
+        if (/^#\s*➡️?\s*(明日计划|Tomorrow's Plan)/i.test(line)) {
             inTomorrow = true;
-        } else if (/^## /.test(line) && inTomorrow) {
+        } else if (/^# /.test(line) && inTomorrow) {
             break; // 遇到下一个标题，停止读取
         } else if (inTomorrow && /^\s*-\s*\[.\]/.test(line)) {
             tasks.push(line);
@@ -121,7 +119,7 @@ if (yesterdayFile) {
 
 ---
 
-## ⏳ 时间块记录 (Time Blocks)
+# ⏳ 时间块记录 (Time Blocks)
 
 **请使用 Templater 插入模板 TimeBlock-Insert-Templater.md**
 
@@ -129,84 +127,89 @@ if (yesterdayFile) {
 
 ---
 
-## 📈 今日时间分析 (Time Analysis)
-
-```dataviewjs
-// 1. 获取当前文件的所有带时间的任务
-const tasks = dv.current().file.tasks.where(t => t.start && t.end);
-
-let totalMinutes = 0;
-
-function padTime(t) {
-  let [h, m] = t.split(":");
-  return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
-}
-
-// 2. 准备表格数据
-let rows = tasks.map(t => {
-    let startStr = padTime(t.start);
-    let endStr = padTime(t.end);
-
-    // 使用固定的日期字符串来计算时间差，避免跨日问题干扰
-    let baseDate = "2000-01-01T";
-    let startTime = new Date(baseDate + startStr);
-    let endTime = new Date(baseDate + endStr);
-
-    // 计算分钟数
-    let duration = Math.round((endTime - startTime) / (1000 * 60));
-
-    // 防止负数（比如跨午夜或填错），简单处理为绝对值或忽略
-    if (duration < 0) duration += 24 * 60;
-
-    totalMinutes += duration;
-
-    // 👇👇👇 把这里原本的一行代码，换成上面那一长段 👇👇👇
-    // 解析任务名称 (修复下划线导致的 em> 乱码问题)
-    let taskNameStr = "-";
-    if (t.task_name) {
-        if (t.task_name.path) {
-            let path = t.task_name.path;
-            let displayName = path.split("/").pop().replace(/\.md$/, "");
-            let safeDisplayName = displayName.replace(/_/g, "_\u200b");
-            taskNameStr = `[[${path}|${safeDisplayName}]]`;
-        } else {
-            taskNameStr = String(t.task_name).replace(/_/g, "_\u200b");
-        }
-    }
-    // 👆👆👆 替换结束 👆👆👆
-
-    return [
-        t.text.replace(/\(.*?::.*?\)/g, "").trim(),
-        startStr,
-        endStr,
-        duration + " min",
-        taskNameStr
-    ];
-});
-
-// 3. 输出表格
-dv.table(["任务", "开始", "结束", "时长", "任务名称"], rows);
-
-// 4. 输出总计
-if (totalMinutes > 0) {
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  let timeString = "";
-  if (hours > 0) timeString += `${hours} 小时 `;
-  if (minutes > 0) timeString += `${minutes} 分钟`;
-
-  dv.paragraph(`**⏱️ 总耗时：${timeString}** (共 ${totalMinutes} 分钟)`);
-} else {
-    dv.paragraph("今天还没有记录时间块。");
-}
-```
-
----
-
-## 💡 想法与反思 (Ideas & Reflections)
+# 📈 今日时间分析 (Time Analysis)
+> [!quote]- 点击展开计算块
+> ```dataviewjs
+> // 1. 获取当前文件的所有带时间的任务
+> const tasks = dv.current().file.tasks.where(t => t.start && t.end);
+> 
+> let totalMinutes = 0;
+> 
+> function padTime(t) {
+>   let [h, m] = t.split(":");
+>   return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
+> }
+> 
+> // 2. 准备表格数据
+> let rows = tasks.map(t => {
+>     let startStr = padTime(t.start);
+>     let endStr = padTime(t.end);
+> 
+>     // 使用固定的日期字符串来计算时间差，避免跨日问题干扰
+>     let baseDate = "2000-01-01T";
+>     let startTime = new Date(baseDate + startStr);
+>     let endTime = new Date(baseDate + endStr);
+> 
+>     // 计算分钟数
+>     let duration = Math.round((endTime - startTime) / (1000 * 60));
+> 
+>     // 防止负数（比如跨午夜或填错），简单处理为绝对值或忽略
+>     if (duration < 0) duration += 24 * 60;
+> 
+>     totalMinutes += duration;
+> 
+>     // 👇👇👇 把这里原本的一行代码，换成上面那一长段 👇👇👇
+>     // 解析任务名称 (修复下划线导致的 em> 乱码问题)
+>     let taskNameStr = "-";
+>     if (t.task_name) {
+>         if (t.task_name.path) {
+>             let path = t.task_name.path;
+>             let displayName = path.split("/").pop().replace(/\.md$/, "");
+>             let safeDisplayName = displayName.replace(/_/g, "_\u200b");
+>             taskNameStr = `[[${path}|${safeDisplayName}]]`;
+>         } else {
+>             taskNameStr = String(t.task_name).replace(/_/g, "_\u200b");
+>         }
+>     }
+>     // 👆👆👆 替换结束 👆👆👆
+> 
+>     return [
+>         t.text.replace(/\(.*?::.*?\)/g, "").trim(),
+>         startStr,
+>         endStr,
+>         duration + " min",
+>         taskNameStr
+>     ];
+> });
+> 
+> // 3. 输出表格
+> dv.table(["任务", "开始", "结束", "时长", "任务名称"], rows);
+> 
+> // 4. 输出总计
+> if (totalMinutes > 0) {
+>   const hours = Math.floor(totalMinutes / 60);
+>   const minutes = totalMinutes % 60;
+>   let timeString = "";
+>   if (hours > 0) timeString += `${hours} 小时 `;
+>   if (minutes > 0) timeString += `${minutes} 分钟`;
+> 
+>   dv.paragraph(`**⏱️ 总耗时：${timeString}** (共 ${totalMinutes} 分钟)`);
+> } else {
+>     dv.paragraph("今天还没有记录时间块。");
+> }
+> ```
 
 ---
 
-## ➡️ 明日计划 (Tomorrow's Plan)
+# 💡 想法与反思 (Ideas & Reflections)
+
+---
+
+# ➡️ 明日计划 (Tomorrow's Plan)
 
 - [ ]
+
+# 📓临时记录(Recording Place)
+
+
+
