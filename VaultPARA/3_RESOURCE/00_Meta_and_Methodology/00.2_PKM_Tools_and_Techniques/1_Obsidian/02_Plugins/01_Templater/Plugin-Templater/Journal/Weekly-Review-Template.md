@@ -237,7 +237,7 @@ if (reflectionCount === 0) {
 const moment = window.moment;
 
 // --- Config ---
-const SEPARATE_PROJECT_LIST = ["Project_Families", "FamilyPersonalCare", "Project_Healthy", "Project_Kids", "Project_家庭各类设备"];
+const SEPARATE_PROJECT_LIST = ["Project_Families", "FamilyPersonalCare"];
 const inputYear = "<% year %>";
 const inputWeek = "<% weekNum %>";
 
@@ -454,13 +454,13 @@ if (SEPARATE_PROJECT_LIST.length > 0) {
 ## 📝 本周总结 (Weekly Summary)
 
 ### 核心进度 (Main progress):
-- 
+-
 
 ### 问题与反思 (Issues & reflections):
-- 
+-
 
 ### 下周计划 (Next week's plan):
-- 
+-
 
 ---
 
