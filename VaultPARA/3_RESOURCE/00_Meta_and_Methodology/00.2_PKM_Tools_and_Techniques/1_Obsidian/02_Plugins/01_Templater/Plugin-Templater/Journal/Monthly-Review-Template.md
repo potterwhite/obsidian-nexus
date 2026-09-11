@@ -219,7 +219,7 @@ if (reflectionCount === 0) {
 const moment = window.moment;
 
 // --- Config ---
-const SEPARATE_PROJECT_LIST = ["Project_Demo5", "Project_Demo6", "Project_Demo2", "Project_Demo1", "Project_Demo4"];
+const SEPARATE_PROJECT_LIST = ["Project_Demo5", "Project_Demo6", "Project_Demo2", "Project_Demo1", "Project_Demo4", "Project_Demo3"];
 const inputYear = "<% year %>";
 const inputMonthStr = "<% monthNum %>";
 
@@ -440,11 +440,13 @@ if (SEPARATE_PROJECT_LIST.length > 0) {
 ## 📝 Monthly Summary
 
 ### 核心进度 (Main progress):
--
+- 
+
 ### 问题与反思 (Issues & reflections):
--
-### 下周计划 (Next week's plan):
--
+- 
+
+### 下个月的计划 (Next Month's plan):
+- 
 
 ---
 

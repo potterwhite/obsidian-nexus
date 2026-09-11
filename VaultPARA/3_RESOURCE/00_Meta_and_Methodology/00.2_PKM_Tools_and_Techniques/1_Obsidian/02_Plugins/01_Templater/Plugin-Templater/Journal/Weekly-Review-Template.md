@@ -237,7 +237,7 @@ if (reflectionCount === 0) {
 const moment = window.moment;
 
 // --- Config ---
-const SEPARATE_PROJECT_LIST = ["Project_Demo5", "Project_Demo6", "Project_Demo2", "Project_Demo1", "Project_Demo4"];
+const SEPARATE_PROJECT_LIST = ["Project_Demo5", "Project_Demo6"];
 const inputYear = "<% year %>";
 const inputWeek = "<% weekNum %>";
 
@@ -455,8 +455,10 @@ if (SEPARATE_PROJECT_LIST.length > 0) {
 
 ### 核心进度 (Main progress):
 -
+
 ### 问题与反思 (Issues & reflections):
 -
+
 ### 下周计划 (Next week's plan):
 -
 
