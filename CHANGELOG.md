@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.0](https://github.com/potterwhite/obsidian-nexus/compare/v0.7.0...v0.8.0) (2026-09-11)
+
+
+### ✨ Added
+
+* normalize journal template headings and collapse Time Analysis block ([#22](https://github.com/potterwhite/obsidian-nexus/issues/22)) ([f93b075](https://github.com/potterwhite/obsidian-nexus/commit/f93b07550ab9ce00bb1f82e16cee0af740773947))
+
 ## [0.7.0](https://github.com/potterwhite/obsidian-nexus/compare/v0.6.0...v0.7.0) (2026-02-02)
 
 * **review:** improve weekly and monthly reflection and task review templates ([#19](https://github.com/potterwhite/obsidian-nexus/issues/19)) ([f40a6ae](https://github.com/potterwhite/obsidian-nexus/commit/f40a6ae90c2794c15316f6e18cd3ca320ed286fc))
