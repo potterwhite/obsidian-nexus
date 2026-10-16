@@ -1,6 +1,6 @@
 ---
 # 全局唯一ID，建议用uuid或项目名+简短描述
-task_uuid: <%* tR += tp.user.uuid() %>
+task_uuid: <%* tR += tp.user.lib_config().safeUuid(tp) %>
 task_name: <% tp.file.title %>
 project:
   - "[[Project_Markdown_FILE_NAME]]"
@@ -22,35 +22,10 @@ tags: journal/task
 ## 相关链接
 - [[wiki_url]]
 
-## 统计进展情况
+## 统计进展情况 (Time Tracking)
 ```dataviewjs
-const taskId = dv.current().task_uuid;
-let rows = [];
-let total_duration = 0;
-
-for (let page of dv.pages('#journal/daily')) {
-    if (!page.file.tasks) continue;
-    for (let t of page.file.tasks) {
-        if (
-            t.task_uuid === taskId &&
-            t.start && t.end &&
-            t.section && t.section.subpath &&  t.section.subpath.startsWith("⏳ 时间块记录")
-        ) {
-            let start = new Date("1970-01-01T" + t.start.padStart(5, '0'));
-            let end = new Date("1970-01-01T" + t.end.padStart(5, '0'));
-            let duration = Math.round((end - start) / (1000 * 60));
-            total_duration += duration;
-            rows.push([
-                "[[" + page.file.name + "]]",
-                t.date || "",
-                t.start,
-                t.end,
-                duration + " 分钟"
-            ]);
-        }
-    }
-}
-
-dv.table(["日记", "日期", "开始", "结束", "时长"], rows);
-dv.paragraph(`**总耗时**: ${total_duration} 分钟`);
+// 数据收集与渲染复用共享库（路径集中在 lib_config.js）
+const cfg = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/javascript/lib_config.js"));
+const lib = eval(await dv.io.load(cfg.DV_LIB_PATH));
+lib.renderTaskTimeTable(dv, cfg);
 ```

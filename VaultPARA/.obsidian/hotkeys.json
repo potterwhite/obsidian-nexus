@@ -9,7 +9,7 @@
     }
   ],
   "templater-obsidian:create-new-note-from-template": [],
-  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/DailyNote-Template.md": [
+  "templater-obsidian:3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/Plugin-Templater/Journal/DailyNote-Template.md": [
     {
       "modifiers": [
         "Alt"
@@ -17,39 +17,7 @@
       "key": "D"
     }
   ],
-  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/Project-Template.md": [
-    {
-      "modifiers": [
-        "Alt"
-      ],
-      "key": "P"
-    }
-  ],
-  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/Templater/TimeBlock-Insert-Templater.md": [
-    {
-      "modifiers": [
-        "Alt"
-      ],
-      "key": "I"
-    }
-  ],
-  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/Task-Template.md": [
-    {
-      "modifiers": [
-        "Alt"
-      ],
-      "key": "T"
-    }
-  ],
-  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/Templater/update-task-time.md": [
-    {
-      "modifiers": [
-        "Alt"
-      ],
-      "key": "U"
-    }
-  ],
-  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/Weekly-Review-Template.md": [
+  "templater-obsidian:3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/Plugin-Templater/Journal/Weekly-Review-Template.md": [
     {
       "modifiers": [
         "Alt"
@@ -57,12 +25,60 @@
       "key": "W"
     }
   ],
-  "templater-obsidian:3_RESOURCE/about pkb_personal_knowledge_base/Templates/Monthly-Review-Template.md": [
+  "templater-obsidian:3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/Plugin-Templater/Journal/Monthly-Review-Template.md": [
     {
       "modifiers": [
         "Alt"
       ],
       "key": "M"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/Plugin-Templater/Journal/Yearly-Review-Template.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "Y"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/Plugin-Templater/Project-Template.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "P"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/Plugin-Templater/Task-Template.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "T"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/Plugin-Templater/TechnicalConclusion-Template.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "C"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/Plugin-Templater/TimeBlock-Insert-Templater.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "I"
+    }
+  ],
+  "templater-obsidian:3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/Plugin-Templater/update-task-time.md": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "U"
     }
   ],
   "markdown:toggle-preview": [],
@@ -73,62 +89,6 @@
         "Shift"
       ],
       "key": "E"
-    }
-  ],
-  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/DailyNote-Template.md": [
-    {
-      "modifiers": [
-        "Alt"
-      ],
-      "key": "D"
-    }
-  ],
-  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Weekly-Review-Template.md": [
-    {
-      "modifiers": [
-        "Alt"
-      ],
-      "key": "W"
-    }
-  ],
-  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Monthly-Review-Template.md": [
-    {
-      "modifiers": [
-        "Alt"
-      ],
-      "key": "M"
-    }
-  ],
-  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Project-Template.md": [
-    {
-      "modifiers": [
-        "Alt"
-      ],
-      "key": "P"
-    }
-  ],
-  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Task-Template.md": [
-    {
-      "modifiers": [
-        "Alt"
-      ],
-      "key": "T"
-    }
-  ],
-  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/TechnicalConclusion-Template.md": [
-    {
-      "modifiers": [
-        "Alt"
-      ],
-      "key": "C"
-    }
-  ],
-  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Templater/TimeBlock-Insert-Templater.md": [
-    {
-      "modifiers": [
-        "Alt"
-      ],
-      "key": "I"
     }
   ],
   "editor:toggle-source": [
@@ -148,12 +108,21 @@
       "key": "I"
     }
   ],
-  "templater-obsidian:3_RESOURCE/05_Miscellaneous_and_Notes/05.4_PKB_Tricks/Templates/Yearly-Review-Template.md": [
+  "editor:toggle-checklist-status": [],
+  "app:toggle-left-sidebar": [
     {
       "modifiers": [
-        "Alt"
+        "Mod"
       ],
-      "key": "Y"
+      "key": "Q"
+    }
+  ],
+  "app:toggle-right-sidebar": [
+    {
+      "modifiers": [
+        "Mod"
+      ],
+      "key": "E"
     }
   ]
 }

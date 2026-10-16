@@ -49,15 +49,19 @@ tR += `project:\n  - "[[Area-Journal]]"\n`;
 tR += `year: ${year}\n`;
 tR += "---\n";
 
-// 可选：自动重命名当前文件为 "January 12, 2025" 这种格式
-// 如果不需要自动重命名，可以删除下面这一行
-await tp.file.rename(fullDate);
+// 自动重命名当前文件为 "January 12, 2025" 这种格式（CONS-4 统一策略）
+// 失败时（例如同名文件已存在）给出可见提示，而不是让模板报错中断
+try {
+    await tp.file.rename(fullDate);
+} catch (e) {
+    new Notice(`⚠️ 自动重命名失败（可能同名日记已存在）: ${fullDate}`, 8000);
+}
 %>
 
-# 🛐 今日灵修 (Daily Devotion)
+# 🛐 Daily Devotion (今日灵修)
 
 
-# ✅ 今日目标 (Today's Goals)
+# ✅ Today's Goals (今日目标)
 
 ```dataviewjs
 // ----------------------------
@@ -119,7 +123,7 @@ if (yesterdayFile) {
 
 ---
 
-# ⏳ 时间块记录 (Time Blocks)
+# ⏳ Time Blocks (时间块记录)
 
 **请使用 Templater 插入模板 TimeBlock-Insert-Templater.md**
 
@@ -127,7 +131,7 @@ if (yesterdayFile) {
 
 ---
 
-# 📈 今日时间分析 (Time Analysis)
+# 📈 Time Analysis (今日时间分析)
 > [!quote]- 点击展开计算块
 > ```dataviewjs
 > // 1. 获取当前文件的所有带时间的任务
@@ -201,15 +205,15 @@ if (yesterdayFile) {
 
 ---
 
-# 💡 想法与反思 (Ideas & Reflections)
+# 💡 Ideas & Reflections (想法与反思)
 
 ---
 
-# ➡️ 明日计划 (Tomorrow's Plan)
+# ➡️ Tomorrow's Plan (明日计划)
 
 - [ ]
 
-# 📓临时记录(Recording Place)
+# 📝 Scratch Pad (临时记录)
 
 
 
