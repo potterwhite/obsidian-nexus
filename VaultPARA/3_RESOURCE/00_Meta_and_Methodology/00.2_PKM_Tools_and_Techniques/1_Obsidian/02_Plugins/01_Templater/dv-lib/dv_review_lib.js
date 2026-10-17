@@ -228,20 +228,23 @@ async function extractReflections(dv, app, cfg, winStartStr, winEndStr) {
     const items = await Promise.all(candidates.map(async ({ file, date, link }) => {
         const lines = (await app.vault.read(file)).split("\n");
         let capturing = false;
+        let startLevel = 0;
         const captured = [];
         for (const line of lines) {
             const trimmed = line.trim();
-            const isHeading = /^#+\s/.test(trimmed);
+            const hm = trimmed.match(/^(#+)\s/);
             if (!capturing) {
-                if (isHeading && cfg.SECTION_KEYS.reflections.some(k => trimmed.includes(k))) {
+                if (hm && cfg.SECTION_KEYS.reflections.some(k => trimmed.includes(k))) {
                     capturing = true;
+                    startLevel = hm[1].length;
                 }
                 continue;
             }
-            // 遇到下一个任意级别标题即停止
-            // （旧版只认 "## "，遇到同级 "# " 标题不停止，会把后面的
-            //   明日计划/临时记录也吞进反思里 —— 本次一并修复）
-            if (isHeading) break;
+            // 只在遇到【同级或更高级】标题时停止：
+            // 更深一级的子标题（如反思区里的 ## 小节）属于反思正文，必须纳入——
+            // 否则像"# 💡 想法与反思 下直接写 ## 子主题"的日记会整天空提取。
+            // （更早的版本只认 "## "，同级 "# " 标题不停止，会吞掉后面的明日计划——BUG-8）
+            if (hm && hm[1].length <= startLevel) break;
             captured.push(line);
         }
         return { link, date, text: captured.join("\n").trim() };
