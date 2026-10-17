@@ -15,60 +15,77 @@
 const moment = window.moment;
 
 // --------------------------------------------------------------------------
-// 跨午夜策略 (cross-midnight policy)
-// 23:00→01:00 这类跨午夜时间块，end < start 会算出负时长：
-//   "skip"   = 丢弃该条并给出可见警告（当前默认，与历史多数报表一致）
-//   "add24h" = 按 +24 小时折算
-// KNOWN_ISSUES BUG-4 尚未批复；若批复统一 +24h，只需把下一行改成 "add24h"。
+// 跨午夜策略 (cross-midnight policy) — KNOWN_ISSUES BUG-4 已批复：方案 A。
+// 跨午夜时间块【必须按天拆开写】（当天 23:00-24:00 + 次日 00:00-06:00），
+// 单行跨午夜写法（23:00→06:00）会被丢弃并给出显眼警告，不做 +24h 折算。
+// 理由（维护者原话）：一次跨多天会少一天的日记，分不清是漏写还是写对。
 // --------------------------------------------------------------------------
 const CROSS_MIDNIGHT_POLICY = "skip";
 
 // --------------------------------------------------------------------------
-// AI 分析 prompt（周/月报"一键复制"按钮拼接在日记原文之前）。
-// KNOWN_ISSUES PRIV-3 待批复：批复后替换为中文中性版本，只改这一处。
+// AI 分析 prompt（各报告"一键复制"按钮拼接在正文之前）。
+// KNOWN_ISSUES PRIV-3 已批复：英文为主（对 AI 更精准）+ 附完整中文版，
+// 统计维度全部中性化（不含任何个人处境定制）。
 // --------------------------------------------------------------------------
 const AI_REFLECTION_PROMPT = `# Role
-You are an objective data analyst and archivist. Your task is to process unstructured personal diary entries and organize them into structured, factual categories. Think of yourself as a "casing" (肠衣) that shapes discrete, loose information into defined "containers."
+You are an objective data analyst and archivist. Your task is to process unstructured personal diary entries and organize them into structured, factual categories. Do not offer advice, emotional comfort, or psychological interpretation. Only extract what actually happened or what was explicitly thought.
 
-# Constraints & Rules
-1. **No Subjectivity:** Do not offer advice, emotional comfort, or psychological interpretation. Do not summarize the "vibe." Only extract what actually happened or what was explicitly thought.
-2. **Quantitative Focus:** Where possible, count the frequency of specific thoughts, actions, or desires (e.g., "Mentioned leaving: X times").
+# Rules
+1. **No Subjectivity:** Do not summarize the "vibe." Only facts and recorded thoughts.
+2. **Quantitative Focus:** Where possible, count the frequency of recurring themes (e.g., "Mentioned exercise: X times").
 3. **Language:** The final output must be in **Chinese**.
 
 # Output Structure (The Containers)
 Please categorize the content into the following logical containers (or others if relevant):
 
 1. **📦 Container 1: Life & Family Logistics**
-   - Concrete events (e.g., "Sent tea," "Ate noodles").
-   - Financial decisions.
-   - Family interactions (facts only).
+   - Concrete events, financial decisions, family interactions (facts only).
 
 2. **🛠️ Container 2: Work & Technical Output**
-   - Specific tasks completed (e.g., "Submitted PR," "Converted model").
-   - Technical knowledge points learned or reinforced.
-   - Tools used.
+   - Specific tasks completed, knowledge points learned, tools used.
 
-3. **🚀 Container 3: Career Strategy & Entrepreneurship**
-   - Strategic thoughts recorded.
-   - Business ideas or market analysis mentioned.
-   - Decisions regarding career path (staying vs. leaving).
+3. **🚀 Container 3: Plans & Goals**
+   - Plans recorded, goal adjustments, significant decisions.
 
 4. **🧠 Container 4: Mental Models & Methodology**
-   - Reflections on learning methods.
-   - Productivity workflows.
+   - Reflections on learning methods and productivity workflows.
 
 5. **📊 Data Summary (Statistics)**
    - Provide a bulleted list of counts for recurring themes.
    - Examples:
-     - "Times mentioned wanting to leave/resign: [Count]"
-     - "Times mentioned entrepreneurship/startup ideas: [Count]"
-     - "Specific technical tasks completed: [Count]"
-     - "Money-saving actions: [Count]"
+     - "Times mentioned exercise/workout: [Count]"
+     - "Times mentioned reading: [Count]"
+     - "Specific tasks completed: [Count]"
+     - "New things mentioned wanting to try: [Count]"
 
 # Action
 Now, please analyze the provided text below based on these instructions:
 
-[Paste your diary text here]`;
+---
+
+# 角色
+你是一名客观的档案整理员。你的任务是把非结构化的个人日记整理成结构化的事实分类。不要提供建议、安慰或心理解读，只提取实际发生的事情或明确记录的想法。
+
+# 规则
+1. 保持客观：不总结"情绪"，只记录事实与想法。
+2. 尽量量化：统计反复出现的主题次数（如"提到运动：X 次"）。
+3. 输出语言：中文。
+
+# 输出结构（分类容器）
+1. 📦 生活与家庭：具体事件、财务决定、家庭互动（只记事实）。
+2. 🛠️ 工作与技术：完成的具体任务、学到的知识点、用过的工具。
+3. 🚀 计划与目标：记录过的计划、目标调整、重要决定。
+4. 🧠 方法与心得：学习方法、工作流程方面的反思。
+5. 📊 频次统计：反复出现的主题计数列表，例如：
+   - "提到运动/锻炼：[次数]"
+   - "提到阅读：[次数]"
+   - "完成的具体任务数：[次数]"
+   - "提到想尝试的新事物：[次数]"
+
+# 行动
+请根据以上要求分析下面的日记原文：
+
+[在此粘贴日记 / Paste diary text here]`;
 
 // ==========================================================================
 // 1. 基础工具 (helpers)
@@ -149,7 +166,8 @@ function collectTimeSlots(dv, cfg, winStartStr, winEndStr) {
             try {
                 const duration = minutesBetween(t.start, t.end);
                 if (duration === null) {
-                    warnings.push(`[[${daily.file.name}]]：「${String(t.text).slice(0, 30)}」时长为负（可能跨午夜），已跳过`);
+                    // BUG-4 方案 A（强制）：跨 midnight 必须按天拆写，不折算。
+                    warnings.push(`[[${daily.file.name}]]：「${String(t.text).slice(0, 30)}」(${t.start}→${t.end}) 跨午夜，已跳过——请拆成两条：当天 ${t.start}-24:00 和次日 00:00-${t.end}`);
                     continue;
                 }
                 const taskPage = uuidMap[t.task_uuid];
@@ -239,8 +257,13 @@ async function extractReflections(dv, app, cfg, winStartStr, winEndStr) {
 // ==========================================================================
 
 // 被跳过的数据必须让用户看见（CONS-3）：Notice 提醒 + 报表内可折叠警告块
+// BUG-4 方案 A：跨午夜跳过单独弹一条更显眼的 Notice，提醒按天拆写。
 function renderWarnings(dv, warnings) {
     if (!warnings || warnings.length === 0) return;
+    const crossMidnight = warnings.filter(w => w.includes("跨午夜")).length;
+    if (crossMidnight > 0) {
+        new Notice(`🌙 ${crossMidnight} 条跨午夜时间块被跳过：请按天拆写（当天 ~24:00 + 次日 00:00~），详见报表警告块`, 12000);
+    }
     new Notice(`⚠️ 统计时有 ${warnings.length} 条数据被跳过，请查看报表内的警告块`, 8000);
     dv.paragraph(
         `> [!warning]- ⚠️ ${warnings.length} 条数据被跳过（点击展开 / click to expand）\n` +

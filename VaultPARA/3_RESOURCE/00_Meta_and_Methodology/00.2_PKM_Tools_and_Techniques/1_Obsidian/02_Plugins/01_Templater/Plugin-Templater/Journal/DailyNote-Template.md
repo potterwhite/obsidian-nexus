@@ -127,7 +127,8 @@ if (yesterdayFile) {
 
 **请使用 Templater 插入模板 TimeBlock-Insert-Templater.md**
 
-- [ ] Task description (start:: ) (end:: ) (task_uuid:: [[Task-UUID-Name]]) (task_name:: [[Task-Name]])
+<!-- ⚠️ 手写示例：task_uuid 必须是不带 [[]] 的裸文本（否则统计静默归零）；task_name 才用 [[链接]]。 -->
+- [ ] Task description (start:: ) (end:: ) (task_uuid:: Task-UUID-Name) (task_name:: [[Task-Name]])
 
 ---
 
@@ -138,6 +139,7 @@ if (yesterdayFile) {
 > const tasks = dv.current().file.tasks.where(t => t.start && t.end);
 > 
 > let totalMinutes = 0;
+> let skippedCrossMidnight = [];
 > 
 > function padTime(t) {
 >   let [h, m] = t.split(":");
@@ -145,7 +147,8 @@ if (yesterdayFile) {
 > }
 > 
 > // 2. 准备表格数据
-> let rows = tasks.map(t => {
+> let rows = [];
+> for (let t of tasks) {
 >     let startStr = padTime(t.start);
 >     let endStr = padTime(t.end);
 > 
@@ -157,12 +160,15 @@ if (yesterdayFile) {
 >     // 计算分钟数
 >     let duration = Math.round((endTime - startTime) / (1000 * 60));
 > 
->     // 防止负数（比如跨午夜或填错），简单处理为绝对值或忽略
->     if (duration < 0) duration += 24 * 60;
+>     // BUG-4 方案 A（强制）：跨午夜不折算 +24h，跳过并显眼警告，
+>     // 要求按天拆写（当天 ~24:00 + 次日 00:00~），与周/月/年报同一规则
+>     if (duration <= 0) {
+>         skippedCrossMidnight.push(`${startStr}→${endStr}「${t.text.replace(/\(.*?::.*?\)/g, "").trim().slice(0, 30)}」`);
+>         continue;
+>     }
 > 
 >     totalMinutes += duration;
 > 
->     // 👇👇👇 把这里原本的一行代码，换成上面那一长段 👇👇👇
 >     // 解析任务名称 (修复下划线导致的 em> 乱码问题)
 >     let taskNameStr = "-";
 >     if (t.task_name) {
@@ -175,16 +181,15 @@ if (yesterdayFile) {
 >             taskNameStr = String(t.task_name).replace(/_/g, "_\u200b");
 >         }
 >     }
->     // 👆👆👆 替换结束 👆👆👆
-> 
->     return [
+>
+>     rows.push([
 >         t.text.replace(/\(.*?::.*?\)/g, "").trim(),
 >         startStr,
 >         endStr,
 >         duration + " min",
 >         taskNameStr
->     ];
-> });
+>     ]);
+> }
 > 
 > // 3. 输出表格
 > dv.table(["任务", "开始", "结束", "时长", "任务名称"], rows);
@@ -200,6 +205,15 @@ if (yesterdayFile) {
 >   dv.paragraph(`**⏱️ 总耗时：${timeString}** (共 ${totalMinutes} 分钟)`);
 > } else {
 >     dv.paragraph("今天还没有记录时间块。");
+> }
+> 
+> // 5. 跨午夜跳过警告（BUG-4 方案 A：显眼提示，要求按天拆写）
+> if (skippedCrossMidnight.length > 0) {
+>   new Notice(`🌙 ${skippedCrossMidnight.length} 条跨午夜时间块未计入：请拆成当天 ~24:00 + 次日 00:00~ 两条`, 12000);
+>   dv.paragraph(
+>     `> [!warning]- 🌙 ${skippedCrossMidnight.length} 条跨午夜时间块未计入统计（点击展开）\n` +
+>     skippedCrossMidnight.map(w => `> - ${w} —— 请拆成两条：当天 ~24:00 和次日 00:00~`).join("\n")
+>   );
 > }
 > ```
 
