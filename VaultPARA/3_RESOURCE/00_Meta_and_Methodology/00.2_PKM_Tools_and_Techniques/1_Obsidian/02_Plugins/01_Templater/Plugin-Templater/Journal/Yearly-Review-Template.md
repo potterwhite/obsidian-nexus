@@ -341,9 +341,65 @@ lib.renderWarnings(dv, warnings);
 
 > [!tip] 用法
 > 点击上方「📋 一键复制」，粘贴给外部 AI；把 AI 返回的年度总结粘贴在下方。
-> 配合附录 B 的「年度 40 问」（https://stephango.com/40-questions）做年度自问效果更好。
 
 
+
+---
+
+## ❓ Annual 40 Questions (年度 40 问)
+
+> [!tip] 用法（Steph Ango 的年度仪式，https://stephango.com/40-questions）
+> 每年回答同一套 40 个问题，约花一周慢慢答完，不必一次写完；可增删题目。
+> 跨年对比答案最能看出长期变化。直接在每题后面作答即可。
+
+> [!question]- 点击展开 40 问（中英对照，在 `>-` 行下方作答）
+> 1. What did you do this year that you'd never done before? —— 今年你做了什么以前从未做过的事？
+> 2. Did you keep your new year's resolutions? —— 你守住新年许下的决心了吗？
+> 3. Did anyone close to you give birth? —— 你身边有人生孩子了吗？
+> 4. Did anyone close to you die? —— 你身边有人离世了吗？
+> 5. What cities/states/countries did you visit? —— 今年去过哪些城市/省份/国家？
+> 6. What would you like to have next year that you lacked this year? —— 明年你想拥有什么今年缺失的东西？
+> 7. What date(s) from this year will remain etched upon your memory, and why? —— 今年的哪个/哪些日子会刻在你记忆里？为什么？
+> 8. What was your biggest achievement of the year? —— 今年最大的成就是什么？
+> 9. What was your biggest failure? —— 今年最大的失败是什么？
+> 10. What other hardships did you face? —— 还经历了哪些困难？
+> 11. Did you suffer illness or injury? —— 生过病或受过伤吗？
+> 12. What was the best thing you bought? —— 买过的最值的东西是什么？
+> 13. Whose behavior merited celebration? —— 谁的行为值得称赞？
+> 14. Whose behavior made you appalled? —— 谁的行为让你震惊/不齿？
+> 15. Where did most of your money go? —— 钱大多花到哪去了？
+> 16. What did you get really, really, really excited about? —— 什么事让你特别特别特别兴奋？
+> 17. What song will always remind you of this year? —— 哪首歌会让你永远想起这一年？
+> 18. Compared to this time last year, are you: happier or sadder? Richer or poorer? Healthier or unhealthier? —— 和去年同期比：更快乐还是更难过？更富还是更穷？更健康还是更差？
+> 19. What do you wish you'd done more of? —— 你希望自己多做了什么？
+> 20. What do you wish you'd done less of? —— 你希望自己少做了什么？
+> 21. How are you spending the holidays? —— 假期是怎么过的？
+> 22. Did you fall in love this year? —— 今年坠入爱河了吗？
+> 23. Do you hate anyone now that you didn't hate this time last year? —— 现在有谁是去年同期不恨、现在恨的？
+> 24. What was your favorite show? —— 最喜欢的剧集/节目是什么？
+> 25. What was the best book you read? —— 读过的最好的书是哪本？
+> 26. What was your greatest musical discovery of the year? —— 今年最大的音乐发现是什么？
+> 27. What was your favorite film? —— 最喜欢的电影是什么？
+> 28. What was your favorite meal? —— 最爱的一餐是什么？
+> 29. What did you want and get? —— 想要什么、并且得到了？
+> 30. What did you want and not get? —— 想要什么、但没得到？
+> 31. What did you do on your birthday? —— 生日那天做了什么？
+> 32. What one thing would have made your year immeasurably more satisfying? —— 哪一件事若发生了，会让这一年满意得多？
+> 33. How would you describe your personal fashion this year? —— 怎么形容你今年的穿衣风格？
+> 34. What kept you sane? —— 是什么让你保持理智/没垮掉？
+> 35. Which celebrity/public figure did you admire the most? —— 最钦佩的名人/公众人物是谁？
+> 36. What political issue stirred you the most? —— 哪个公共议题最触动你？
+> 37. Who did you miss? —— 你想念谁？
+> 38. Who was the best new person you met? —— 今年新认识的人里最棒的是谁？
+> 39. What valuable life lesson did you learn this year? —— 今年学到的人生教训是什么？
+> 40. What is a quote that sums up your year? —— 用哪句话可以总结这一年？
+
+### ✍️ My Answers (我的作答)
+
+1. 
+2. 
+3. 
+（题目在上方折叠块里，在此逐条作答；答不完的留到明年对比）
 
 ---
 
