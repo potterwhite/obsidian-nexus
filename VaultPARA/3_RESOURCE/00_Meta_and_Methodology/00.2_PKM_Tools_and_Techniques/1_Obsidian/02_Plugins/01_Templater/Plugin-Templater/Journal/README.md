@@ -1,6 +1,6 @@
 # Journal 模板说明
 
-本目录的回顾类模板（Daily/Weekly/Monthly/Yearly）都建立在两个共享库之上，
+本目录的回顾类模板（Daily/Weekly/Monthly/Yearly/Period）都建立在两个共享库之上，
 逻辑集中在库里，模板本身只负责传参和调用（KNOWN_ISSUES STRUCT-1）。
 
 ## 共享库（改逻辑改这里，不要改模板）
@@ -28,8 +28,19 @@
 反思区可选「复制 AI 提示词」按钮，把本周/月反思拼成提示词供外部 AI 总结。
 
 ###### Yearly-Review-Template
-全自动化年度统计。只要平常日记写得规范、不随便修改关键标题名称即可。
-目前仅对 DailyNote 进行统计，不管 Weekly 和 Monthly 的内容（这部分未来可以加入）。
+年度回顾：自动汇总本年 12 篇月报正文（type: month-summary）+ 年度时间统计
+（月度趋势/项目排行/分页图表）+ 年度 40 问（Steph Ango）。
+
+###### Period-Review-Template（通用区间报告，v1）
+一个模板覆盖任意区间：月份 / 季度 / 半年度 / 公历年度 / 自定义起止。
+两层交互：先选模式，再问参数（都有默认值，回车即可）。
+- 时间统计按**精确日期**计算；
+- 汇总区窗口 ≥2 个月聚合月报、<2 个月自动降级聚合周报；
+- 自定义区间的起止不在自然月/周边界时，边界月/周报**整篇纳入**，
+  生成的报告里会有固定的 [!warning] 提醒；
+- 农历年模式尚未实现（留待后续迭代）。
+- ⚠️ 热键需手动绑定：Templater 设置 → Template Hotkeys →
+  添加本模板，建议绑 `Alt+G`。
 
 ###### 年度时间统计表-Template
 手动录入数据，按脚本内固定变量格式输出三种图形的模板（面向 A4 横向打印）。
@@ -37,4 +48,5 @@
 ## 快捷键（见 `.obsidian/hotkeys.json`）
 
 Alt+D 日记 · Alt+W 周回顾 · Alt+M 月回顾 · Alt+Y 年回顾 ·
-Alt+P 项目 · Alt+T 任务 · Alt+C 技术总结 · Alt+I 插入时间块 · Alt+U 回写任务耗时
+Alt+P 项目 · Alt+T 任务 · Alt+C 技术总结 · Alt+I 插入时间块 · Alt+U 回写任务耗时 ·
+Alt+G 通用区间报告（新增，需在 Templater 设置里手动绑定）
