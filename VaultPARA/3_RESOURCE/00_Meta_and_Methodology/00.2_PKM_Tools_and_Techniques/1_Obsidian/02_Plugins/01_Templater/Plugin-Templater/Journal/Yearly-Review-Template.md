@@ -50,14 +50,24 @@ _%>
 
 ---
 
-## 💡 Ideas & Reflections (想法与反思)
+## 📦 Monthly Rollup (月报汇总)
+
+> [!note] 层级汇总（CONS-2 批复）
+> 本区自动收集本年所有月报（type: month-summary）的正文内容——包括每篇月报里落盘的
+> AI Summary 与手写总结，但不含 dataview 自动统计代码块。
+> 一键复制 = AI prompt + 全部月报正文 + 本年压缩时间汇总。
+> （年报不再直接扫描 365 天的日记原文——那个量太大，且周报/月报已经逐级提炼过。）
 
 ```dataviewjs
 // 加载共享配置与共享库（路径集中在 lib_config.js，改位置只改一处）
 const cfg = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/javascript/lib_config.js"));
 const lib = eval(await dv.io.load(cfg.DV_LIB_PATH));
-// 与周/月报共用同一套实现：批量渲染（CONS-1）+ AI 复制按钮（CONS-2）
-await lib.renderReflectionSection(dv, app, cfg, "<% yearStart.format("YYYY-MM-DD") %>", "<% yearEnd.format("YYYY-MM-DD") %>");
+await lib.renderRollupSection(dv, app, cfg, {
+    sourceType: "month-summary",
+    sourceLabel: "月报 (Monthly Reviews)",
+    winStartStr: "<% yearStart.format("YYYY-MM-DD") %>",
+    winEndStr: "<% yearEnd.format("YYYY-MM-DD") %>",
+});
 ```
 
 ## ⏱️ Yearly Task Time Statistics (年度任务时间统计)
@@ -324,6 +334,16 @@ lib.renderWarnings(dv, warnings);
 - 
 #### **Goals for Next Year (<% year + 1 %> 年目标):**
 - 
+
+---
+
+## 🤖 AI Summary (AI 总结落盘区)
+
+> [!tip] 用法
+> 点击上方「📋 一键复制」，粘贴给外部 AI；把 AI 返回的年度总结粘贴在下方。
+> 配合附录 B 的「年度 40 问」（https://stephango.com/40-questions）做年度自问效果更好。
+
+
 
 ---
 

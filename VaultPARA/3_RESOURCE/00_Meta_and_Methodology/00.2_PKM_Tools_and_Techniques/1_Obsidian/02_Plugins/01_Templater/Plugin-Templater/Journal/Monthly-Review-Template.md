@@ -18,13 +18,12 @@ while (true) {
 const year = parseInt(inputYear, 10);
 
 // ==========================================================
-// 2. 输入月份
-// ⚠️ KNOWN_ISSUES BUG-2 待批复：此处按 Esc 取消输入会死循环，
-//    批复后将与年份输入对齐（null/空串回退默认值）。
+// 2. 输入月份（Esc 取消或空输入回退当前月份，与年份输入对齐 —— BUG-2 已修复）
 // ==========================================================
 let inputMonth;
 while (true) {
-    inputMonth = await tp.system.prompt("请输入月份 (Enter month number 1-12):", moment().month() + 1);
+    inputMonth = await tp.system.prompt("请输入月份 (直接回车默认当前月份, Enter month number 1-12):", moment().month() + 1);
+    if (inputMonth === null || inputMonth === "") inputMonth = String(moment().month() + 1);
     if (/^(?:[1-9]|1[0-2])$/.test(inputMonth)) break;
     await tp.system.suggester(["OK"], "月份无效，请输入 1-12 (Invalid month, enter 1-12).");
 }
@@ -67,13 +66,24 @@ _%>
 
 ---
 
-## 💡 Ideas & Reflections (想法与反思)
+## 📦 Weekly Rollup (周报汇总)
+
+> [!note] 层级汇总（CONS-2 批复）
+> 本区自动收集本月所有周报（type: week-summary）的正文内容——包括每篇周报里落盘的
+> AI Summary 与手写总结，但不含 dataview 自动统计代码块。
+> 一键复制 = AI prompt + 全部周报正文 + 本月压缩时间汇总（按日/按项目总计，
+> 不重复 30 天的每一条时间块——那太多了）。每天的原始反思在各周报里查看。
 
 ```dataviewjs
 // 加载共享配置与共享库（路径集中在 lib_config.js，改位置只改一处）
 const cfg = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/javascript/lib_config.js"));
 const lib = eval(await dv.io.load(cfg.DV_LIB_PATH));
-await lib.renderReflectionSection(dv, app, cfg, "<% monthStart.format("YYYY-MM-DD") %>", "<% monthEnd.format("YYYY-MM-DD") %>");
+await lib.renderRollupSection(dv, app, cfg, {
+    sourceType: "week-summary",
+    sourceLabel: "周报 (Weekly Reviews)",
+    winStartStr: "<% monthStart.format("YYYY-MM-DD") %>",
+    winEndStr: "<% monthEnd.format("YYYY-MM-DD") %>",
+});
 ```
 
 ## ⏱️ Task Time Statistics (任务时间统计)
@@ -96,6 +106,16 @@ lib.renderTimeStatistics(dv, app, cfg, "<% monthStart.format("YYYY-MM-DD") %>", 
 
 ### Next Month's Plan (下月计划):
 - 
+
+---
+
+## 🤖 AI Summary (AI 总结落盘区)
+
+> [!tip] 用法
+> 点击上方「📋 一键复制」，粘贴给外部 AI；把 AI 返回的月度总结粘贴在下方。
+> 年报会自动收集本区内容做年度汇总。
+
+
 
 ---
 

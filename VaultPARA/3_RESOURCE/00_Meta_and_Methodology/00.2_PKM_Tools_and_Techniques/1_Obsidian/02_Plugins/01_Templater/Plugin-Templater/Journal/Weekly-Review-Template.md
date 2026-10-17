@@ -82,7 +82,9 @@ _%>
 // 加载共享配置与共享库（路径集中在 lib_config.js，改位置只改一处）
 const cfg = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/javascript/lib_config.js"));
 const lib = eval(await dv.io.load(cfg.DV_LIB_PATH));
-await lib.renderReflectionSection(dv, app, cfg, "<% weekStart.format("YYYY-MM-DD") %>", "<% weekEnd.format("YYYY-MM-DD") %>");
+// 一键复制的内容 = AI prompt + 本周每天反思原文 + 本周逐条时间明细（CONS-2 批复 b）
+const { slots } = lib.collectTimeSlots(dv, cfg, "<% weekStart.format("YYYY-MM-DD") %>", "<% weekEnd.format("YYYY-MM-DD") %>");
+await lib.renderReflectionSection(dv, app, cfg, "<% weekStart.format("YYYY-MM-DD") %>", "<% weekEnd.format("YYYY-MM-DD") %>", lib.detailSlotsText(slots));
 ```
 
 ## ⏱️ Task Time Statistics (任务时间统计)
@@ -105,6 +107,16 @@ lib.renderTimeStatistics(dv, app, cfg, "<% weekStart.format("YYYY-MM-DD") %>", "
 
 ### Next Week's Plan (下周计划):
 - 
+
+---
+
+## 🤖 AI Summary (AI 总结落盘区)
+
+> [!tip] 用法
+> 点击上方「📋 一键复制」，粘贴给外部 AI；把 AI 返回的总结粘贴在下方。
+> 月报会自动收集本区内容做月度汇总（KNOWN_ISSUES CONS-2 层级汇总）。
+
+
 
 ---
 

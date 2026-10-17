@@ -36,7 +36,7 @@ const __nexusConfig = {
   // ⚠️ 演示用占位名，请替换成你自己的项目文件名（部分匹配、不区分大小写）。
   // Demo placeholders — replace with your own project file names
   // (case-insensitive substring match against the task's `project` field).
-  SEPARATE_PROJECTS: ["Project_Demo5", "Project_Demo6"],
+  SEPARATE_PROJECTS: ["Project_Demo", "Project_Sample"],
 
   // ---- dataview 共享库的 vault 路径 (path of the dataview shared library) ----
   DV_LIB_PATH: "3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/dv-lib/dv_review_lib.js",
