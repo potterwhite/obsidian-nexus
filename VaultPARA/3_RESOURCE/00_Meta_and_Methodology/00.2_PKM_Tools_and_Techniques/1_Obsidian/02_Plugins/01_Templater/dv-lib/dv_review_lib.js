@@ -259,6 +259,18 @@ async function extractReflections(dv, app, cfg, winStartStr, winEndStr) {
 // 4. 渲染 (rendering)
 // ==========================================================================
 
+// 硬错误块（BUG-4 强化，维护者批复 2026-10-17）：
+// 有任何被跳过的记录就【不出统计结果】——红色 [!error] 块逐条列出
+// 问题记录（日期/时间段/任务 + 修复指引），修复后报表自动恢复。
+// 背景：面对几十上百条时间块，温和的警告会让人根本不知道统计已经不准。
+function renderErrorBlock(dv, warnings) {
+    new Notice(`🚫 ${warnings.length} 条时间记录有误，统计已中止——请按报表内红色块逐条修复`, 15000);
+    dv.paragraph(
+        `> [!error]+ 🚫 发现 ${warnings.length} 条错误记录，时间统计已中止（逐条修复后自动恢复）\n` +
+        warnings.map(w => `> - ${w}`).join("\n")
+    );
+}
+
 // 被跳过的数据必须让用户看见（CONS-3）：Notice 提醒 + 报表内可折叠警告块
 // BUG-4 方案 A：跨午夜跳过单独弹一条更显眼的 Notice，提醒按天拆写。
 function renderWarnings(dv, warnings) {
@@ -313,9 +325,14 @@ async function renderReflectionSection(dv, app, cfg, winStartStr, winEndStr, cop
     };
 }
 
-// 时间统计完整区块：收集 → 分组 → 仪表盘 → 警告
+// 时间统计完整区块：收集 → 有错则红色硬错误块并中止 → 分组 → 仪表盘
 function renderTimeStatistics(dv, app, cfg, winStartStr, winEndStr) {
     const { slots, warnings } = collectTimeSlots(dv, cfg, winStartStr, winEndStr);
+    // 有错不出结果（BUG-4 强化）：统计数字在错误数据面前没有意义
+    if (warnings.length > 0) {
+        renderErrorBlock(dv, warnings);
+        return;
+    }
     const separated = cfg.SEPARATE_PROJECTS || [];
     const isSeparated = (slot) => {
         const clean = getCleanProjectName(slot.projectName).toLowerCase();
@@ -328,7 +345,6 @@ function renderTimeStatistics(dv, app, cfg, winStartStr, winEndStr) {
     } else {
         renderDashboard(dv, "Overview — All Projects (全部项目)", slots, "🚀");
     }
-    renderWarnings(dv, warnings);
 }
 
 // 单组仪表盘：明细表 + 项目汇总 + 三张图表
@@ -624,6 +640,7 @@ function renderTodayFragments(dv) {
     renderTaskTimeTable,
     renderProjectTimeTable,
     renderWarnings,
+    renderErrorBlock,
     renderRollupSection,
     renderTodayFragments,
     // 复制内容拼装（CONS-2）

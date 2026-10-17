@@ -80,6 +80,11 @@ const moment = window.moment;
 
 const { slots, warnings } = lib.collectTimeSlots(dv, cfg, "<% yearStart.format("YYYY-MM-DD") %>", "<% yearEnd.format("YYYY-MM-DD") %>");
 
+// 有错不出结果（BUG-4 强化）：红色硬错误块逐条列出问题记录，修复后自动恢复
+if (warnings.length > 0) {
+    lib.renderErrorBlock(dv, warnings);
+} else {
+
 // -----------------------------------------------------------
 // 辅助函数：插入强制分页符 (Page Break Helper)
 // -----------------------------------------------------------
@@ -320,8 +325,7 @@ dv.table(
     ])
 );
 
-// 被跳过的数据让用户看见（CONS-3）
-lib.renderWarnings(dv, warnings);
+}  // end else（数据无误才渲染上面的统计）
 ```
 
 ---
