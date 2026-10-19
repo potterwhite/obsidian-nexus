@@ -123,13 +123,17 @@ function renderConfigStatus(dv, cfg) {
     const localLink = `[[${JS_DIR}lib_config_local.js|lib_config_local.js]]`;
     const readmeLink = `[[${JS_DIR.replace(/javascript\/$/, "")}Plugin-Templater/Journal/README.md|Journal/README.md]]`;
     const nameList = separated.map(s => "`" + s + "`").join("、") || "（空）";
+    // 名单按一行两个排版（逗号+制表符分隔），长名单一眼扫完
+    const namePairs = [];
+    for (let i = 0; i < separated.length; i += 2) {
+        namePairs.push("> " + separated.slice(i, i + 2).map(s => "`" + s + "`").join(",\t"));
+    }
+    const nameBlock = namePairs.join("\n") || "> （空）";
     if (cfg._localConfigLoaded) {
         dv.paragraph(
             `> [!success]- 🧩 项目分组来源：本地私人配置 ${localLink}（点击展开）\n` +
             `> 检测到 javascript/ 目录存在 ${localLink}，本报告的「重点项目 vs 其他项目」分组使用该文件里的 SEPARATE_PROJECTS 名单（${separated.length} 个关键词）：\n` +
-            `> ${nameList}\n` +
-            `> 名单不合适？点击上面的 ${localLink} 直接跳进去修改，保存后重新打开本报表即生效（**无需重启**）。\n` +
-            `> 此文件只存在于本 vault，不会被同步进公开 repo。`
+            nameBlock
         );
     } else {
         dv.paragraph(
