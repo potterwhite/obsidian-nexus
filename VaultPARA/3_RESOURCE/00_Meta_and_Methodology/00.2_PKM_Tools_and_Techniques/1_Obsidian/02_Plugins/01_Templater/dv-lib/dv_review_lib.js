@@ -123,16 +123,18 @@ function renderConfigStatus(dv, cfg) {
     const localLink = `[[${JS_DIR}lib_config_local.js|lib_config_local.js]]`;
     const readmeLink = `[[${JS_DIR.replace(/javascript\/$/, "")}Plugin-Templater/Journal/README.md|Journal/README.md]]`;
     const nameList = separated.map(s => "`" + s + "`").join("、") || "（空）";
-    // 名单按一行两个排版（逗号+制表符分隔），长名单一眼扫完
+    // 名单按一行两个排版。<br> 硬换行 + &nbsp; 间隙：callout 内的单换行和普通
+    // 空格/制表符会被 markdown 渲染压缩掉，这两种写法在任何设置下都可靠。
+    const GAP = "&nbsp;".repeat(8);
     const namePairs = [];
     for (let i = 0; i < separated.length; i += 2) {
-        namePairs.push("> " + separated.slice(i, i + 2).map(s => "`" + s + "`").join(",\t"));
+        namePairs.push("> " + separated.slice(i, i + 2).map(s => "`" + s + "`").join("," + GAP));
     }
-    const nameBlock = namePairs.join("\n") || "> （空）";
+    const nameBlock = namePairs.join("<br>\n") || "> （空）";
     if (cfg._localConfigLoaded) {
         dv.paragraph(
             `> [!success]- 🧩 项目分组来源：本地私人配置 ${localLink}（点击展开）\n` +
-            `> 检测到 javascript/ 目录存在 ${localLink}，本报告的「重点项目 vs 其他项目」分组使用该文件里的 SEPARATE_PROJECTS 名单（${separated.length} 个关键词）：\n` +
+            `> 检测到 javascript/ 目录存在 ${localLink}，本报告的「重点项目 vs 其他项目」分组使用该文件里的 SEPARATE_PROJECTS 名单（${separated.length} 个关键词）：<br>\n` +
             nameBlock
         );
     } else {
