@@ -80,8 +80,9 @@ _%>
 
 ```dataviewjs
 // 加载共享配置与共享库（路径集中在 lib_config.js，改位置只改一处）
-const cfg = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/javascript/lib_config.js"));
-const lib = eval(await dv.io.load(cfg.DV_LIB_PATH));
+const lib = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/dv-lib/dv_review_lib.js"));
+// cfg = lib_config 基础约定 + lib_config_local 私人覆盖（文件缺失则静默跳过）
+const cfg = await lib.loadCfg(dv);
 // 一键复制的内容 = AI prompt + 本周每天反思原文 + 本周逐条时间明细（CONS-2 批复 b）
 const { slots } = lib.collectTimeSlots(dv, cfg, "<% weekStart.format("YYYY-MM-DD") %>", "<% weekEnd.format("YYYY-MM-DD") %>");
 await lib.renderReflectionSection(dv, app, cfg, "<% weekStart.format("YYYY-MM-DD") %>", "<% weekEnd.format("YYYY-MM-DD") %>", lib.detailSlotsText(slots));
@@ -90,8 +91,9 @@ await lib.renderReflectionSection(dv, app, cfg, "<% weekStart.format("YYYY-MM-DD
 ## ⏱️ Task Time Statistics (任务时间统计)
 
 ```dataviewjs
-const cfg = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/javascript/lib_config.js"));
-const lib = eval(await dv.io.load(cfg.DV_LIB_PATH));
+const lib = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/dv-lib/dv_review_lib.js"));
+// cfg = lib_config 基础约定 + lib_config_local 私人覆盖（文件缺失则静默跳过）
+const cfg = await lib.loadCfg(dv);
 lib.renderTimeStatistics(dv, app, cfg, "<% weekStart.format("YYYY-MM-DD") %>", "<% weekEnd.format("YYYY-MM-DD") %>");
 ```
 

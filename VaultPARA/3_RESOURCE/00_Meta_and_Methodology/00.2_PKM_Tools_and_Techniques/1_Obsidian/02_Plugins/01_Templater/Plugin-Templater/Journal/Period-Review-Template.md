@@ -160,8 +160,9 @@ _%>
 
 ```dataviewjs
 // 加载共享配置与共享库（路径集中在 lib_config.js，改位置只改一处）
-const cfg = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/javascript/lib_config.js"));
-const lib = eval(await dv.io.load(cfg.DV_LIB_PATH));
+const lib = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/dv-lib/dv_review_lib.js"));
+// cfg = lib_config 基础约定 + lib_config_local 私人覆盖（文件缺失则静默跳过）
+const cfg = await lib.loadCfg(dv);
 await lib.renderRollupSection(dv, app, cfg, {
     sourceType: "<% sourceType %>",
     sourceLabel: "<% sourceLabel %>",
@@ -175,8 +176,9 @@ await lib.renderRollupSection(dv, app, cfg, {
 ## ⏱️ Time Statistics (时间统计)
 
 ```dataviewjs
-const cfg = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/javascript/lib_config.js"));
-const lib = eval(await dv.io.load(cfg.DV_LIB_PATH));
+const lib = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/dv-lib/dv_review_lib.js"));
+// cfg = lib_config 基础约定 + lib_config_local 私人覆盖（文件缺失则静默跳过）
+const cfg = await lib.loadCfg(dv);
 lib.renderTimeStatistics(dv, app, cfg, "<% winStart.format("YYYY-MM-DD") %>", "<% winEnd.format("YYYY-MM-DD") %>");
 ```
 

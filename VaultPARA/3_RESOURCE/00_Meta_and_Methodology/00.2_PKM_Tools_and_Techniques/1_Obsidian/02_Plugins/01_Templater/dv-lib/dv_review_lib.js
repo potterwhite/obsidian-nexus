@@ -91,6 +91,49 @@ Now, please analyze the provided text below based on these instructions:
 // 1. 基础工具 (helpers)
 // ==========================================================================
 
+// javascript/ 目录的 vault 路径（lib_config.js 与可选的 lib_config_local.js 都住在这里）
+const JS_DIR = "3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/javascript/";
+
+// 加载配置：lib_config.js（基础约定）+ 可选的 lib_config_local.js（私人覆盖）。
+// 私人覆盖文件只存在于私人 vault（如真实项目名单），不进入公开 repo；
+// 文件缺失或写法不对时静默跳过（try/catch + null 检查），不影响开源用户。
+// 用法（dataviewjs 块开头两行）：
+//   const lib = eval(await dv.io.load("<本文件的 vault 路径>"));
+//   const cfg = await lib.loadCfg(dv);
+// cfg._localConfigLoaded 标记私人覆盖是否生效，renderConfigStatus 据此给出显眼提示。
+async function loadCfg(dv) {
+    const cfg = eval(await dv.io.load(JS_DIR + "lib_config.js"));
+    cfg._localConfigLoaded = false;
+    try {
+        const local = eval(await dv.io.load(JS_DIR + "lib_config_local.js"));
+        if (local) {
+            Object.assign(cfg, local);
+            cfg._localConfigLoaded = true;
+        }
+    } catch (e) { /* 无本地覆盖文件：正常使用基础配置 */ }
+    return cfg;
+}
+
+// 显眼地告诉 user 当前项目分组用的是哪份配置（维护者要求 2026-10-19）：
+// 有本地覆盖 → 绿色 [!success]；没有 → 黄色 [!warning] 并说明后果与补救。
+function renderConfigStatus(dv, cfg) {
+    const separated = cfg.SEPARATE_PROJECTS || [];
+    if (cfg._localConfigLoaded) {
+        dv.paragraph(
+            `> [!success]- 🧩 项目分组来源：本地私人配置 lib_config_local.js（点击展开）\n` +
+            `> 检测到 javascript/ 目录存在 **lib_config_local.js**，本报告的「重点项目 vs 其他项目」分组使用该文件里的 SEPARATE_PROJECTS 名单（${separated.length} 个关键词）。\n` +
+            `> 此文件只存在于本 vault，不会被同步进公开 repo；修改它后**无需重启**，重新打开本报表即生效。`
+        );
+    } else {
+        dv.paragraph(
+            `> [!warning]- 🧩 项目分组来源：默认配置（未找到 lib_config_local.js，点击展开）\n` +
+            `> 当前使用 lib_config.js 内置名单（${separated.length} 个关键词：${separated.map(s => "`" + s + "`").join("、") || "空"}）。\n` +
+            `> 若这些是演示占位名，**所有项目会全部归入「Main / Work Projects (其他项目)」一组**，看不到个人/主业分组。\n` +
+            `> 补救：在 javascript/ 目录创建 lib_config_local.js，写入你自己的 SEPARATE_PROJECTS 名单（写法见 Journal/README.md），重新打开报表即生效，无需重启。`
+        );
+    }
+}
+
 function padTime(t) {
     return String(t).padStart(5, "0");
 }
@@ -325,8 +368,9 @@ async function renderReflectionSection(dv, app, cfg, winStartStr, winEndStr, cop
     };
 }
 
-// 时间统计完整区块：收集 → 有错则红色硬错误块并中止 → 分组 → 仪表盘
+// 时间统计完整区块：配置来源提示 → 收集 → 有错则红色硬错误块并中止 → 分组 → 仪表盘
 function renderTimeStatistics(dv, app, cfg, winStartStr, winEndStr) {
+    renderConfigStatus(dv, cfg);
     const { slots, warnings } = collectTimeSlots(dv, cfg, winStartStr, winEndStr);
     // 有错不出结果（BUG-4 强化）：统计数字在错误数据面前没有意义
     if (warnings.length > 0) {
@@ -630,11 +674,14 @@ function renderTodayFragments(dv) {
 // 裸写 { ... } 会被解析成代码块而不是对象。
 // ==========================================================================
 ({
+    // 配置加载（lib_config + 可选 lib_config_local 私人覆盖）
+    loadCfg,
     // 数据层
     collectTimeSlots,
     extractReflections,
     buildUuidPageMap,
     // 渲染层
+    renderConfigStatus,
     renderReflectionSection,
     renderTimeStatistics,
     renderTaskTimeTable,

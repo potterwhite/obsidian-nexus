@@ -228,8 +228,9 @@ if (yesterdayFile) {
 > [!quote]- 点击展开：链接到今天的笔记 + 今天创建的笔记（自动收集）
 > ```dataviewjs
 > // Steph Ango 式日记：日记是链接枢纽，碎片笔记链接回来，这里自动汇集（CONS-2 ②）
-> const cfg = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/javascript/lib_config.js"));
-> const lib = eval(await dv.io.load(cfg.DV_LIB_PATH));
+> const lib = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/dv-lib/dv_review_lib.js"));
+> // cfg = lib_config 基础约定 + lib_config_local 私人覆盖（文件缺失则静默跳过）
+> const cfg = await lib.loadCfg(dv);
 > lib.renderTodayFragments(dv);
 > ```
 

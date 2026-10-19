@@ -36,6 +36,11 @@ const __nexusConfig = {
   // ⚠️ 演示用占位名，请替换成你自己的项目文件名（部分匹配、不区分大小写）。
   // Demo placeholders — replace with your own project file names
   // (case-insensitive substring match against the task's `project` field).
+  //
+  // 🔒 私人覆盖约定 (local override)：在同目录创建 lib_config_local.js
+  // （已被 .gitignore 排除，永不入库），导出 { SEPARATE_PROJECTS: [...] } 等字段，
+  // 报表渲染时由 dv_review_lib.js 的 loadCfg() 自动合并且覆盖此处默认值，
+  // 并在报表顶部显示当前分组来源。写法见 Journal/README.md。
   SEPARATE_PROJECTS: ["Project_Demo", "Project_Sample"],
 
   // ---- dataview 共享库的 vault 路径 (path of the dataview shared library) ----
