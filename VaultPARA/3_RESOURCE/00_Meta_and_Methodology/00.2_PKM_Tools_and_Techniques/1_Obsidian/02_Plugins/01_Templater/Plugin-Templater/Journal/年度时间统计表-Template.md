@@ -8,7 +8,7 @@ let authorName = await tp.system.prompt("请输入汇报人姓名", "Author");
 const suggestedName = `${inputYear}-年度工作时间统计表-${authorName}`;
 _%>
 ---
-report_uuid: <%* tR += tp.user.uuid ? tp.user.uuid() : "no-uuid" %>
+report_uuid: <%* tR += tp.user.lib_config().safeUuid(tp) %>
 type: year-stats-manual
 year: <% inputYear %>
 author: <% authorName %>
@@ -212,7 +212,7 @@ for (let i = 0; i < totalPages; i++) {
     let end = start + pageSize;
     let pageData = projectData.slice(start, end);
 
-    let barYamlData = projectData.map(p => {
+    let barYamlData = pageData.map(p => {
         let safeName = p.project.replace(/"/g, '\\"');
         return `  - project: "${safeName}"\n    hours: ${p.hours}`;
     }).join("\n");

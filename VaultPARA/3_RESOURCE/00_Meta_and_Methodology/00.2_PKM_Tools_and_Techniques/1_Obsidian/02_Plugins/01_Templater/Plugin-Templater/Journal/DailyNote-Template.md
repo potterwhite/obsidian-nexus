@@ -49,15 +49,19 @@ tR += `project:\n  - "[[Area-Journal]]"\n`;
 tR += `year: ${year}\n`;
 tR += "---\n";
 
-// 可选：自动重命名当前文件为 "January 12, 2025" 这种格式
-// 如果不需要自动重命名，可以删除下面这一行
-await tp.file.rename(fullDate);
+// 自动重命名当前文件为 "January 12, 2025" 这种格式（CONS-4 统一策略）
+// 失败时（例如同名文件已存在）给出可见提示，而不是让模板报错中断
+try {
+    await tp.file.rename(fullDate);
+} catch (e) {
+    new Notice(`⚠️ 自动重命名失败（可能同名日记已存在）: ${fullDate}`, 8000);
+}
 %>
 
-# 🛐 今日灵修 (Daily Devotion)
+# 🛐 Daily Devotion (今日灵修)
 
 
-# ✅ 今日目标 (Today's Goals)
+# ✅ Today's Goals (今日目标)
 
 ```dataviewjs
 // ----------------------------
@@ -119,21 +123,23 @@ if (yesterdayFile) {
 
 ---
 
-# ⏳ 时间块记录 (Time Blocks)
+# ⏳ Time Blocks (时间块记录)
 
 **请使用 Templater 插入模板 TimeBlock-Insert-Templater.md**
 
-- [ ] Task description (start:: ) (end:: ) (task_uuid:: [[Task-UUID-Name]]) (task_name:: [[Task-Name]])
+<!-- ⚠️ 手写示例：task_uuid 必须是不带 [[]] 的裸文本（否则统计静默归零）；task_name 才用 [[链接]]。 -->
+- [ ] Task description (start:: ) (end:: ) (task_uuid:: Task-UUID-Name) (task_name:: [[Task-Name]])
 
 ---
 
-# 📈 今日时间分析 (Time Analysis)
+# 📈 Time Analysis (今日时间分析)
 > [!quote]- 点击展开计算块
 > ```dataviewjs
 > // 1. 获取当前文件的所有带时间的任务
 > const tasks = dv.current().file.tasks.where(t => t.start && t.end);
 > 
 > let totalMinutes = 0;
+> let skippedCrossMidnight = [];
 > 
 > function padTime(t) {
 >   let [h, m] = t.split(":");
@@ -141,7 +147,8 @@ if (yesterdayFile) {
 > }
 > 
 > // 2. 准备表格数据
-> let rows = tasks.map(t => {
+> let rows = [];
+> for (let t of tasks) {
 >     let startStr = padTime(t.start);
 >     let endStr = padTime(t.end);
 > 
@@ -153,12 +160,15 @@ if (yesterdayFile) {
 >     // 计算分钟数
 >     let duration = Math.round((endTime - startTime) / (1000 * 60));
 > 
->     // 防止负数（比如跨午夜或填错），简单处理为绝对值或忽略
->     if (duration < 0) duration += 24 * 60;
+>     // BUG-4 方案 A（强制）：跨午夜不折算 +24h，跳过并显眼警告，
+>     // 要求按天拆写（当天 ~24:00 + 次日 00:00~），与周/月/年报同一规则
+>     if (duration <= 0) {
+>         skippedCrossMidnight.push(`${startStr}→${endStr}「${t.text.replace(/\(.*?::.*?\)/g, "").trim().slice(0, 30)}」`);
+>         continue;
+>     }
 > 
 >     totalMinutes += duration;
 > 
->     // 👇👇👇 把这里原本的一行代码，换成上面那一长段 👇👇👇
 >     // 解析任务名称 (修复下划线导致的 em> 乱码问题)
 >     let taskNameStr = "-";
 >     if (t.task_name) {
@@ -171,16 +181,15 @@ if (yesterdayFile) {
 >             taskNameStr = String(t.task_name).replace(/_/g, "_\u200b");
 >         }
 >     }
->     // 👆👆👆 替换结束 👆👆👆
-> 
->     return [
+>
+>     rows.push([
 >         t.text.replace(/\(.*?::.*?\)/g, "").trim(),
 >         startStr,
 >         endStr,
 >         duration + " min",
 >         taskNameStr
->     ];
-> });
+>     ]);
+> }
 > 
 > // 3. 输出表格
 > dv.table(["任务", "开始", "结束", "时长", "任务名称"], rows);
@@ -197,19 +206,41 @@ if (yesterdayFile) {
 > } else {
 >     dv.paragraph("今天还没有记录时间块。");
 > }
+> 
+> // 5. 跨午夜跳过警告（BUG-4 方案 A：显眼提示，要求按天拆写）
+> if (skippedCrossMidnight.length > 0) {
+>   new Notice(`🌙 ${skippedCrossMidnight.length} 条跨午夜时间块未计入：请拆成当天 ~24:00 + 次日 00:00~ 两条`, 12000);
+>   dv.paragraph(
+>     `> [!warning]- 🌙 ${skippedCrossMidnight.length} 条跨午夜时间块未计入统计（点击展开）\n` +
+>     skippedCrossMidnight.map(w => `> - ${w} —— 请拆成两条：当天 ~24:00 和次日 00:00~`).join("\n")
+>   );
+> }
 > ```
 
 ---
 
-# 💡 想法与反思 (Ideas & Reflections)
+# 💡 Ideas & Reflections (想法与反思)
 
 ---
 
-# ➡️ 明日计划 (Tomorrow's Plan)
+# 📎 Today's Fragments (今日碎片)
+
+> [!quote]- 点击展开：链接到今天的笔记 + 今天创建的笔记（自动收集）
+> ```dataviewjs
+> // Steph Ango 式日记：日记是链接枢纽，碎片笔记链接回来，这里自动汇集（CONS-2 ②）
+> const lib = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/dv-lib/dv_review_lib.js"));
+> // cfg = lib_config 基础约定 + lib_config_local 私人覆盖（文件缺失则静默跳过）
+> const cfg = await lib.loadCfg(dv);
+> lib.renderTodayFragments(dv);
+> ```
+
+---
+
+# ➡️ Tomorrow's Plan (明日计划)
 
 - [ ]
 
-# 📓临时记录(Recording Place)
+# 📝 Scratch Pad (临时记录)
 
 
 

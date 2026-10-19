@@ -1,5 +1,5 @@
 ---
-report_uuid: <%* tR += tp.user.uuid() %>
+report_uuid: <%* tR += tp.user.lib_config().safeUuid(tp) %>
 type: year-summary
 <%*
 const moment = window.moment;
@@ -11,21 +11,18 @@ let inputYear;
 const defaultYear = String(moment().year());
 while (true) {
     inputYear = await tp.system.prompt("请输入年份 (直接回车默认当前年份):", defaultYear);
-    if (inputYear === null || inputYear === "") {
-        inputYear = defaultYear;
-    }
+    if (inputYear === null || inputYear === "") inputYear = defaultYear;
     if (/^\d{4}$/.test(inputYear)) break;
     await tp.system.prompt("年份无效，请输入4位数字。");
 }
 const year = parseInt(inputYear, 10);
 
 // ==========================================================
-// 2. 计算年度起止
+// 2. 计算年度起止（对象构造，避免 2 月 29 日溢出）
 // ==========================================================
-const yearStart = moment().year(year).startOf("year");
-const yearEnd = moment().year(year).endOf("year");
+const yearStart = moment({ year: year, month: 0, day: 1 }).startOf("year");
+const yearEnd = moment({ year: year, month: 0, day: 1 }).endOf("year");
 
-// 建议文件名
 const suggestedFileName = `${year}-Year-Review`;
 
 tR += `title: ${year} Year Review\n`;
@@ -37,107 +34,59 @@ tR += `suggested_file_name: ${suggestedFileName}`;
 %>
 tags: summary/year
 ---
+<%*
+// 统一自动改名（CONS-4）；失败时给用户可见提示而不是中断模板
+try {
+    await tp.file.rename(suggestedFileName);
+} catch (e) {
+    new Notice(`⚠️ 自动重命名失败（可能同名文件已存在）: ${suggestedFileName}`, 8000);
+}
+_%>
 
-# <% year %> Year Review
+# 🗓️ <% year %> Year Review
 
-## 🗓️ This Year
-- Start: <% yearStart.format("MMMM D, YYYY") %>
-- End: <% yearEnd.format("MMMM D, YYYY") %>
+- **Start (开始)**: <% yearStart.format("MMMM D, YYYY") %>
+- **End (结束)**: <% yearEnd.format("MMMM D, YYYY") %>
 
 ---
 
-## 💡 Ideas & Reflections Look Back
+## 📦 Monthly Rollup (月报汇总)
+
+> [!note] 层级汇总（CONS-2 批复）
+> 本区自动收集本年所有月报（type: month-summary）的正文内容——包括每篇月报里落盘的
+> AI Summary 与手写总结，但不含 dataview 自动统计代码块。
+> 一键复制 = AI prompt + 全部月报正文 + 本年压缩时间汇总。
+> （年报不再直接扫描 365 天的日记原文——那个量太大，且周报/月报已经逐级提炼过。）
+
 ```dataviewjs
-// ==========================================================
-// 📝 PART 1: 想法与反思提取 (Metadata 预检查优化版)
-// ==========================================================
-const moment = window.moment;
-// 🟢 请确保这里的年份和 Part 2 一致，或者手动写死 "2025"
-const inputYear = "<% year %>";
-const targetSection = "想法与反思"; // 你的标题关键词，不需要写 #
-
-const yearStart = moment().year(Number(inputYear)).startOf("year");
-const yearEnd = moment().year(Number(inputYear)).endOf("year");
-
-// 🟢 1. 创建一个容器用于显示状态，稍后我们可以修改它
-const container = dv.el("div", `*⏳ 正在智能扫描 ${inputYear} 年的日记...*`);
-
-const journalPages = dv.pages('#journal/daily');
-let reflectionResults = [];
-
-// ⏱️ 性能优化核心：遍历处理
-for (let page of journalPages) {
-    // 1. 日期快速过滤
-    const dateStr = page.date || page.file.name;
-    const date = moment(dateStr, ["YYYY-MM-DD", "MMMM D, YYYY", "YYYY/M/D"], true);
-    if (!date.isValid() || date.isBefore(yearStart) || date.isAfter(yearEnd)) continue;
-
-    // 2. 🚀【核心优化】先查缓存，不读文件！
-    // 获取 Obsidian 对该文件的元数据缓存
-    const file = app.vault.getAbstractFileByPath(page.file.path);
-    if (!file) continue;
-
-    const fileCache = app.metadataCache.getFileCache(file);
-    // 如果缓存里没有 headers 属性，或者 headers 里找不到包含关键词的标题，直接跳过
-    // 这样就避免了 90% 不必要的硬盘读取
-    let hasTargetHeader = false;
-    if (fileCache && fileCache.headings) {
-        hasTargetHeader = fileCache.headings.some(h => h.heading.includes(targetSection));
-    }
-
-    if (!hasTargetHeader) continue;
-
-    // 3. 只有确认有标题了，才进行昂贵的读取操作
-    const content = await app.vault.read(file);
-    const lines = content.split('\n');
-    let isCapturing = false;
-    let capturedText = [];
-
-    // 提取内容逻辑
-    for (let line of lines) {
-        // 兼容带 Emoji 或不带的情况
-        if (line.trim().includes(targetSection) && line.trim().startsWith("#")) {
-            isCapturing = true;
-            continue;
-        }
-        if (isCapturing && line.trim().startsWith("## ")) break;
-        if (isCapturing) capturedText.push(line);
-    }
-
-    const rawText = capturedText.join('\n');
-    // 再次过滤空内容
-    if (/[a-zA-Z0-9\u4e00-\u9fa5]/.test(rawText)) {
-        reflectionResults.push({
-            link: page.file.link,
-            dateObj: date,
-            text: rawText.trim()
-        });
-    }
-}
-
-// 4. 扫描完成后，清空状态文字，或者替换为统计信息
-// container.innerText = ""; // 直接清空，不占用空间
-// 如果你想显示总结，可以用:
-container.innerText = `✅ 扫描完成，共 ${reflectionResults.length} 条`;
-
-if (reflectionResults.length === 0) {
-    dv.paragraph("> *No reflections found for this year.*");
-} else {
-    reflectionResults.sort((a, b) => a.dateObj - b.dateObj);
-    dv.paragraph(`**📅 共提取到 ${reflectionResults.length} 天的记录**`);
-    for (let item of reflectionResults) {
-        dv.paragraph(`> [!QUOTE]+ ${item.link}\n> ` + item.text.replace(/\n/g, "\n> "));
-    }
-}
+// 加载共享配置与共享库（路径集中在 lib_config.js，改位置只改一处）
+const lib = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/dv-lib/dv_review_lib.js"));
+// cfg = lib_config 基础约定 + lib_config_local 私人覆盖（文件缺失则静默跳过）
+const cfg = await lib.loadCfg(dv);
+await lib.renderRollupSection(dv, app, cfg, {
+    sourceType: "month-summary",
+    sourceLabel: "月报 (Monthly Reviews)",
+    winStartStr: "<% yearStart.format("YYYY-MM-DD") %>",
+    winEndStr: "<% yearEnd.format("YYYY-MM-DD") %>",
+});
 ```
 
-## ⏱️ Yearly Task Time Statistics
+## ⏱️ Yearly Task Time Statistics (年度任务时间统计)
 
 ```dataviewjs
+// 年度专属布局（月度趋势 + 项目排行 + 分页大图），数据收集复用共享库
+const lib = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/dv-lib/dv_review_lib.js"));
+// cfg = lib_config 基础约定 + lib_config_local 私人覆盖（文件缺失则静默跳过）
+const cfg = await lib.loadCfg(dv);
+lib.renderConfigStatus(dv, cfg);
 const moment = window.moment;
-const inputYear = "<% year %>";
-const yearStart = moment().year(Number(inputYear)).startOf("year");
-const yearEnd = moment().year(Number(inputYear)).endOf("year");
+
+const { slots, warnings } = lib.collectTimeSlots(dv, cfg, "<% yearStart.format("YYYY-MM-DD") %>", "<% yearEnd.format("YYYY-MM-DD") %>");
+
+// 有错不出结果（BUG-4 强化）：红色硬错误块逐条列出问题记录，修复后自动恢复
+if (warnings.length > 0) {
+    lib.renderErrorBlock(dv, warnings);
+} else {
 
 // -----------------------------------------------------------
 // 辅助函数：插入强制分页符 (Page Break Helper)
@@ -147,171 +96,83 @@ function insertPageBreak() {
 }
 
 // -----------------------------------------------------------
-// 2. 收集全年的打卡记录
-// -----------------------------------------------------------
-let slots = [];
-
-// 遍历日记文件
-for (let daily of dv.pages('#journal/daily')) {
-    const dateStr = daily.date || daily.file.name;
-    const date = moment(dateStr, ["YYYY-MM-DD", "MMMM D, YYYY", "YYYY/M/D"]);
-
-    // 过滤掉非本年度的日记
-    if (!date.isValid() || date.isBefore(yearStart) || date.isAfter(yearEnd)) continue;
-    if (!daily.file.tasks) continue;
-
-    for (let t of daily.file.tasks) {
-        if (!t.task_uuid || !t.start || !t.end) continue;
-
-        let start = new Date("1970-01-01T" + t.start.padStart(5, '0'));
-        let end = new Date("1970-01-01T" + t.end.padStart(5, '0'));
-        let duration = Math.round((end - start) / (1000 * 60));
-        if (duration <= 0) continue;
-
-        let taskPage = dv.pages().where(p => p.task_uuid === t.task_uuid).first();
-        let taskName = taskPage?.task_name || taskPage?.file?.name || t.text;
-        let projectName = taskPage?.project ? (Array.isArray(taskPage.project) ? taskPage.project[0] : taskPage.project) : "Unknown Project";
-        let projectFile = null;
-        if (typeof projectName === "string" && projectName.startsWith("[[")) {
-            projectFile = projectName.replace(/^\[\[|\]\]$/g, "");
-        }
-
-        slots.push({
-            dateObj: date, // 保留 moment 对象以便后续提取月份
-            duration,
-            projectName,
-            projectFile
-        });
-    }
-}
-
-// -----------------------------------------------------------
-// === 2. 核心计算：按月聚合 & 项目汇总 ===
+// 1. 按月聚合 & 项目汇总
 // -----------------------------------------------------------
 let projectTotals = {};
 let monthlyStats = {};
-// 初始化 12 个月的数据结构
-for (let i = 0; i < 12; i++) {
-    monthlyStats[i] = { total: 0, projects: {} };
-}
+for (let i = 0; i < 12; i++) monthlyStats[i] = { total: 0, projects: {} };
 
 for (let s of slots) {
-    // --- 累计项目总耗时 (为了后面的图表) ---
-    let projectKey = s.projectFile ? `[[${s.projectFile}|${s.projectName.replace(/^\[\[|\]\]$/g, "")}]]` : s.projectName;
+    const cleanName = lib.getCleanProjectName(s.projectName);
+    const projectKey = s.projectFile ? `[[${s.projectFile}|${cleanName}]]` : cleanName;
+
     if (!projectTotals[projectKey]) projectTotals[projectKey] = 0;
     projectTotals[projectKey] += s.duration;
 
-    // --- 累计月度数据 (为了方案1的表格) ---
-    let monthIndex = s.dateObj.month(); // 0-11
-    if (monthlyStats[monthIndex]) {
-        monthlyStats[monthIndex].total += s.duration;
-        // 记录该月内每个项目的耗时，以便找出“当月重点”
-        if (!monthlyStats[monthIndex].projects[projectKey]) monthlyStats[monthIndex].projects[projectKey] = 0;
-        monthlyStats[monthIndex].projects[projectKey] += s.duration;
-    }
+    const monthIndex = s.dateObj.month(); // 0-11
+    monthlyStats[monthIndex].total += s.duration;
+    if (!monthlyStats[monthIndex].projects[projectKey]) monthlyStats[monthIndex].projects[projectKey] = 0;
+    monthlyStats[monthIndex].projects[projectKey] += s.duration;
 }
 
 // -----------------------------------------------------------
-// === 3. 输出表格：月度趋势 (Monthly Breakdown) ===
+// 2. 表格：月度趋势 (Monthly Breakdown)
 // -----------------------------------------------------------
 let monthlyRows = [];
-const monthNames = moment.months(); // ["January", "February", ...]
+const monthNames = moment.months();
 
 for (let i = 0; i < 12; i++) {
     let mData = monthlyStats[i];
     let totalMin = mData.total;
-
-    // 只有当月有数据才显示，或者显示全部 12 个月（这里选择显示全部以便看空窗期）
     let hours = Math.floor(totalMin / 60);
     let mins = totalMin % 60;
     let timeStr = totalMin > 0 ? `${hours}h ${mins}m` : "-";
 
-    // 找出当月耗时最多的项目
     let topProjectName = "-";
     if (totalMin > 0) {
-        let sortedMonthProjects = Object.entries(mData.projects).sort((a, b) => b[1] - a[1]);
-        if (sortedMonthProjects.length > 0) {
-            let [pName, pTime] = sortedMonthProjects[0];
-            let pHours = (pTime / 60).toFixed(1);
-            // 简单清理一下项目名链接格式，让表格好看点
+        let sorted = Object.entries(mData.projects).sort((a, b) => b[1] - a[1]);
+        if (sorted.length > 0) {
+            let [pName, pTime] = sorted[0];
             let cleanName = pName.includes("|") ? pName.split("|")[1].replace("]]", "") : pName.replace(/\[\[|\]\]/g, "");
-            topProjectName = `${cleanName} (${pHours}h)`;
+            topProjectName = `${cleanName} (${(pTime / 60).toFixed(1)}h)`;
         }
     }
-
-    monthlyRows.push([
-        monthNames[i], // 月份名
-        timeStr,       // 总时长
-        topProjectName // 当月重点
-    ]);
+    monthlyRows.push([monthNames[i], timeStr, topProjectName]);
 }
 
-dv.header(3, `📅 Monthly Breakdown (${inputYear})`);
+dv.header(3, `📅 Monthly Breakdown (月度趋势, <% year %>)`);
 dv.table(["Month", "Total Time", "Main Focus"], monthlyRows);
 
 // -----------------------------------------------------------
-// === 4. 输出表格：项目总排行 (Project Rankings) ===
+// 3. 表格：项目总排行 (Project Rankings)
 // -----------------------------------------------------------
-let projectRows = [];
 let sortedProjects = Object.entries(projectTotals).sort((a, b) => b[1] - a[1]);
-
-for (let [project, total] of sortedProjects) {
-    let hours = Math.floor(total / 60);
-    let mins = total % 60;
-    projectRows.push([project, `${hours}h ${mins}m`, total]);
-}
-
-dv.header(3, "🏆 Project Total Time (Yearly)");
-dv.table(["Project", "Time", "Minutes"], projectRows);
-
+dv.header(3, "🏆 Project Total Time (项目年度排行)");
+dv.table(["Project", "Time", "Minutes"], sortedProjects.map(([project, total]) => [
+    project, `${Math.floor(total / 60)}h ${total % 60}m`, total
+]));
 
 // -----------------------------------------------------------
-// 5. 下方是图表数据准备逻辑
+// 4. 图表数据准备
 // -----------------------------------------------------------
-
-// 总结统计 (这里实际计算的是年度总时长)
 let totalMinutes = slots.reduce((sum, s) => sum + s.duration, 0);
 let totalHours = totalMinutes / 60;
 
-// === 准备图表数据：只取项目名最后一段 + 小时数 ===
 let projectData = [];
-// 这里你可以调整阈值，比如年度 0.01 (1%)
-const threshold = totalMinutes * 0.01;
-
 for (let [projectLink, totalMin] of Object.entries(projectTotals)) {
-    // 提取干净的项目名：去掉 [[ ]] 和 | 显示文字，取路径最后一段
     let fullName = projectLink.replace(/^\[\[|\]\]$/g, "").replace(/\|.*$/, "").trim();
-    let projectName = fullName.split("/").pop().replace(/\.md$/i, "").trim();
-    if (projectName === "") projectName = "Unknown Project";
-
-    let hours = Math.round(totalMin / 6) / 10; // 保留一位小数
-
-    /*// 只保留占总时长 3% 以上的项目（小项目直接忽略，不显示“其他”）
-    if (totalMin >= threshold) {
-        projectData.push({ project: projectName, hours: hours });
-    }*/
+    let projectName = fullName.split("/").pop().replace(/\.md$/i, "").trim() || "Unknown Project";
     projectData.push({
-	    project: projectName,
-	    hours: hours,
-	    minutes: totalMin
-	});
+        project: projectName,
+        hours: Math.round(totalMin / 6) / 10,
+        minutes: totalMin
+    });
 }
-
-// 从大到小排序
 projectData.sort((a, b) => b.hours - a.hours);
-
-// -----------------------------------------------------------
-// 6. 图表渲染区域 (复用原有逻辑，未修改任何样式)
-// -----------------------------------------------------------
 
 // === 图表 A：工作权重分布 (Pie) ===
 dv.header(3, "A. 工作权重分布 (Pie)");
-
-let pieYamlData = projectData.map(p => {
-    let safeName = p.project.replace(/"/g, '\\"');
-    return `  - type: "${safeName}"\n    value: ${p.hours}`;
-}).join("\n");
-
+let pieYamlData = projectData.map(p => `  - type: "${p.project.replace(/"/g, '\\"')}"\n    value: ${p.hours}`).join("\n");
 dv.el("div", `
 \`\`\`chartsview
 type: Pie
@@ -344,43 +205,18 @@ options:
 \`\`\`
 `);
 
-
-// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-// (Page Break)
 insertPageBreak();
-// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
-// === 图表 B：项目工时对比 (Column) ===
+// === 图表 B：项目工时对比 (Column，前 40 名，竖排文字) ===
 dv.header(3, "B. 项目工时对比 (Column)");
-
-//let columnYamlData = projectData.map(p => {
-//    let safeName = p.project.replace(/"/g, '\\"');
-//    return `  - project: "${safeName}"\n    hours: ${p.hours}`;
-//}).join("\n");
-
-// ⚡️ 性能优化：只取前 40 名。渲染 100+ 个竖排柱状图是导致卡顿的元凶。
-// 后面的小项目在 Column 图中反正也看不见（高度太低）。
+// ⚡️ 只取前 40 名：渲染 100+ 个竖排柱状图是卡顿的元凶
 let topProjects = projectData.slice(0, 40);
-
-// 【关键步骤 1】专门为柱状图制作“竖排文字”数据
-// 把 "项目名称" 变成 "项\n目\n名\n称"
-let verticalData = topProjects.map(p => {
-    // 将字符串按字符切割，然后用换行符连接
+// 把 "项目名称" 变成竖排 "项\n目\n名\n称"
+let columnYamlData = topProjects.map(p => {
     let vertName = p.project.split("").join("\n");
-    return {
-        project: vertName,
-        hours: p.hours
-    };
-});
-
-let columnYamlData = verticalData.map(p => {
-    // 这里的 p.project 已经是竖排带换行符的了
-    // 注意：YAML 中多行字符串处理比较麻烦，我们需要用 JSON.stringify 哪怕它看起来像 YAML
-    // 并在替换双引号后，保留 \n
-    let safeName = p.project.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+    let safeName = vertName.replace(/"/g, '\\"').replace(/\n/g, "\\n");
     return `  - project: "${safeName}"\n    hours: ${p.hours}`;
 }).join("\n");
-
 dv.el("div", `
 \`\`\`chartsview
 type: Column
@@ -422,39 +258,23 @@ options:
 \`\`\`
 `);
 
-// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-// (Page Break)
 insertPageBreak();
-// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
-// === 图表 C：项目工时排行 (Bar) ===
+// === 图表 C：项目工时排行 (Bar，分页) ===
 dv.header(3, "C. 项目工时排行 (Bar)");
-
-
-// 1. 设定每页显示多少个 (20-25之间最适合A4/A3横向)
-const pageSize = 22;
+const pageSize = 22;  // 每页 20-25 个最适合 A4/A3 横向
 const totalPages = Math.ceil(projectData.length / pageSize);
 
-// 2. 循环生成多个图表
 for (let i = 0; i < totalPages; i++) {
-    // 切片：获取当前页的数据 (例如 0~22, 22~44...)
-    let start = i * pageSize;
-    let end = start + pageSize;
-    let pageData = projectData.slice(start, end);
-
-    let barYamlData = pageData.map(p => {
-        let safeName = p.project.replace(/"/g, '\\"');
-        return `  - project: "${safeName}"\n    hours: ${p.hours}`;
-    }).join("\n");
-
-    // 计算当前图表高度 (项目少的时候自动变矮，最多也就是填满一页)
+    let pageData = projectData.slice(i * pageSize, (i + 1) * pageSize);
+    // 注意：这里必须用 pageData（分页切片），用 projectData 会让每页都渲染全量
+    let barYamlData = pageData.map(p => `  - project: "${p.project.replace(/"/g, '\\"')}"\n    hours: ${p.hours}`).join("\n");
     let pageHeight = Math.max(300, pageData.length * 40);
 
-    // 只有第一页显示大标题，后面显示 "Part X"
     let titleStr = i === 0 ? "" : `**C. 排行榜 (续 - Part ${i + 1})**`;
     if (titleStr) dv.paragraph(titleStr);
 
-dv.el("div", `
+    dv.el("div", `
 \`\`\`chartsview
 type: Bar
 data:
@@ -490,44 +310,105 @@ options:
 \`\`\`
 `, { attr: { style: "width: 1000px; margin: 0 auto;" } });
 
-    // 如果不是最后一页，插入强制分页符
-    if (i < totalPages - 1) {
-        insertPageBreak();
-    }
+    if (i < totalPages - 1) insertPageBreak();
 }
 
-// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-// (Page Break)
 insertPageBreak();
-// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
 // === 底部：详细数据汇总表 ===
 dv.header(3, "D. 数据汇总表 (Data Table)");
-dv.paragraph(`**年度总计：${totalMinutes} 分钟 (约 ${totalHours.toFixed(1)} 小时)**`);
-
+dv.paragraph(`**年度总计 (Year Total)：${totalMinutes} 分钟 (约 ${totalHours.toFixed(1)} 小时)**`);
 dv.table(
     ["项目名称", "分钟 (min)", "小时 (h)", "占比"],
     projectData.map(p => [
         p.project,
         p.minutes,
         p.hours,
-        (p.minutes / totalMinutes * 100).toFixed(1) + "%"
+        totalMinutes > 0 ? (p.minutes / totalMinutes * 100).toFixed(1) + "%" : "0.0%"
     ])
 );
+
+}  // end else（数据无误才渲染上面的统计）
 ```
 
 ---
 
-## 📝 Yearly Summary
+## 📝 Yearly Summary (年度总结)
 
-#### **Major Milestones:**
--
-#### **Reflections:**
--
-#### **Goals for Next Year (<% year + 1 %>):**
--
+#### **Major Milestones (重大里程碑):**
+- 
+#### **Reflections (反思):**
+- 
+#### **Goals for Next Year (<% year + 1 %> 年目标):**
+- 
 
 ---
 
-## 🔗 Related Links
+## 🤖 AI Summary (AI 总结落盘区)
+
+> [!tip] 用法
+> 点击上方「📋 一键复制」，粘贴给外部 AI；把 AI 返回的年度总结粘贴在下方。
+
+
+
+---
+
+## ❓ Annual 40 Questions (年度 40 问)
+
+> [!tip] 用法（Steph Ango 的年度仪式，https://stephango.com/40-questions）
+> 每年回答同一套 40 个问题，约花一周慢慢答完，不必一次写完；可增删题目。
+> 跨年对比答案最能看出长期变化。直接在每题后面作答即可。
+
+> [!question]- 点击展开 40 问（中英对照，在 `>-` 行下方作答）
+> 1. What did you do this year that you'd never done before? —— 今年你做了什么以前从未做过的事？
+> 2. Did you keep your new year's resolutions? —— 你守住新年许下的决心了吗？
+> 3. Did anyone close to you give birth? —— 你身边有人生孩子了吗？
+> 4. Did anyone close to you die? —— 你身边有人离世了吗？
+> 5. What cities/states/countries did you visit? —— 今年去过哪些城市/省份/国家？
+> 6. What would you like to have next year that you lacked this year? —— 明年你想拥有什么今年缺失的东西？
+> 7. What date(s) from this year will remain etched upon your memory, and why? —— 今年的哪个/哪些日子会刻在你记忆里？为什么？
+> 8. What was your biggest achievement of the year? —— 今年最大的成就是什么？
+> 9. What was your biggest failure? —— 今年最大的失败是什么？
+> 10. What other hardships did you face? —— 还经历了哪些困难？
+> 11. Did you suffer illness or injury? —— 生过病或受过伤吗？
+> 12. What was the best thing you bought? —— 买过的最值的东西是什么？
+> 13. Whose behavior merited celebration? —— 谁的行为值得称赞？
+> 14. Whose behavior made you appalled? —— 谁的行为让你震惊/不齿？
+> 15. Where did most of your money go? —— 钱大多花到哪去了？
+> 16. What did you get really, really, really excited about? —— 什么事让你特别特别特别兴奋？
+> 17. What song will always remind you of this year? —— 哪首歌会让你永远想起这一年？
+> 18. Compared to this time last year, are you: happier or sadder? Richer or poorer? Healthier or unhealthier? —— 和去年同期比：更快乐还是更难过？更富还是更穷？更健康还是更差？
+> 19. What do you wish you'd done more of? —— 你希望自己多做了什么？
+> 20. What do you wish you'd done less of? —— 你希望自己少做了什么？
+> 21. How are you spending the holidays? —— 假期是怎么过的？
+> 22. Did you fall in love this year? —— 今年坠入爱河了吗？
+> 23. Do you hate anyone now that you didn't hate this time last year? —— 现在有谁是去年同期不恨、现在恨的？
+> 24. What was your favorite show? —— 最喜欢的剧集/节目是什么？
+> 25. What was the best book you read? —— 读过的最好的书是哪本？
+> 26. What was your greatest musical discovery of the year? —— 今年最大的音乐发现是什么？
+> 27. What was your favorite film? —— 最喜欢的电影是什么？
+> 28. What was your favorite meal? —— 最爱的一餐是什么？
+> 29. What did you want and get? —— 想要什么、并且得到了？
+> 30. What did you want and not get? —— 想要什么、但没得到？
+> 31. What did you do on your birthday? —— 生日那天做了什么？
+> 32. What one thing would have made your year immeasurably more satisfying? —— 哪一件事若发生了，会让这一年满意得多？
+> 33. How would you describe your personal fashion this year? —— 怎么形容你今年的穿衣风格？
+> 34. What kept you sane? —— 是什么让你保持理智/没垮掉？
+> 35. Which celebrity/public figure did you admire the most? —— 最钦佩的名人/公众人物是谁？
+> 36. What political issue stirred you the most? —— 哪个公共议题最触动你？
+> 37. Who did you miss? —— 你想念谁？
+> 38. Who was the best new person you met? —— 今年新认识的人里最棒的是谁？
+> 39. What valuable life lesson did you learn this year? —— 今年学到的人生教训是什么？
+> 40. What is a quote that sums up your year? —— 用哪句话可以总结这一年？
+
+### ✍️ My Answers (我的作答)
+
+1. 
+2. 
+3. 
+（题目在上方折叠块里，在此逐条作答；答不完的留到明年对比）
+
+---
+
+## 🔗 Related Links (相关链接)
 - [[Project_Obsidian-Nexus]]

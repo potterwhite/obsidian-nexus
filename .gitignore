@@ -10,3 +10,6 @@
 .obsidian/cache/
 
 *.sync-conflict-*
+
+# 私人本地配置覆盖（真实项目名单等隐私内容，只存在于私人 vault）
+lib_config_local.js

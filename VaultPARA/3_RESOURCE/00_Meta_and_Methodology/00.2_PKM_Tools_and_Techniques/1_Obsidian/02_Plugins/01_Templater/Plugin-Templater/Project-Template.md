@@ -49,45 +49,12 @@ for (let i = 0; i < tasks.length; i++) {
 - Archive date: ______
 - Archive reason/summary: ______
 
-## ⏱️ 当前任务耗时统计
+## ⏱️ Task Time Tracking (当前任务耗时统计)
 
 ```dataviewjs
-// 获取本文件所有 checklist 里的链接（只要是 checklist，不管在哪个 section）
-const taskLinks = dv.current().file.tasks
-    .map(t => t.text.match(/\[\[([^\]]+)\]\]/))
-    .filter(m => m)
-    .map(m => m[1]);
-
-let rows = [];
-let projectTotal = 0;
-
-for (let link of taskLinks) {
-    const page = dv.page(link);
-    if (!page || !page.task_uuid) continue;
-    const taskId = page.task_uuid;
-
-    // 统计该 task 的总耗时
-    let total = 0;
-    for (let daily of dv.pages('#journal/daily')) {
-        if (!daily.file.tasks) continue;
-        for (let t of daily.file.tasks) {
-            if (
-                t.task_uuid === taskId &&
-                t.start && t.end &&
-                t.section && t.section.subpath && t.section.subpath.startsWith("⏳ 时间块记录")
-            ) {
-                let start = new Date("1970-01-01T" + t.start.padStart(5, '0'));
-                let end = new Date("1970-01-01T" + t.end.padStart(5, '0'));
-                total += Math.round((end - start) / (1000 * 60));
-            }
-        }
-    }
-    projectTotal += total;
-    rows.push([`[[${link}|${page.task_name || page.file.name}]]`, total + " 分钟"]);
-}
-
-dv.table(["任务", "总耗时"], rows);
-dv.paragraph("项目总耗时：" + projectTotal + " 分钟");
-
-
+// 数据收集与渲染复用共享库（路径集中在 lib_config.js）
+const lib = eval(await dv.io.load("3_RESOURCE/00_Meta_and_Methodology/00.2_PKM_Tools_and_Techniques/1_Obsidian/02_Plugins/01_Templater/dv-lib/dv_review_lib.js"));
+// cfg = lib_config 基础约定 + lib_config_local 私人覆盖（文件缺失则静默跳过）
+const cfg = await lib.loadCfg(dv);
+lib.renderProjectTimeTable(dv, cfg);
 ```
