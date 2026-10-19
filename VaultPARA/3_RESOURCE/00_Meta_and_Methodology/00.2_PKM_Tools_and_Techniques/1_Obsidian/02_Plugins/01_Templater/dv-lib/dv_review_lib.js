@@ -115,21 +115,28 @@ async function loadCfg(dv) {
 }
 
 // 显眼地告诉 user 当前项目分组用的是哪份配置（维护者要求 2026-10-19）：
-// 有本地覆盖 → 绿色 [!success]；没有 → 黄色 [!warning] 并说明后果与补救。
+// 有本地覆盖 → 绿色 [!success]，附文件 wiki 链接（点击直接跳进去改）+ 完整名单；
+// 没有 → 黄色 [!warning] 并说明后果与补救。
 function renderConfigStatus(dv, cfg) {
     const separated = cfg.SEPARATE_PROJECTS || [];
+    // wiki 链接用全路径避免同名歧义；点击即可跳到文件本身
+    const localLink = `[[${JS_DIR}lib_config_local.js|lib_config_local.js]]`;
+    const readmeLink = `[[${JS_DIR.replace(/javascript\/$/, "")}Plugin-Templater/Journal/README.md|Journal/README.md]]`;
+    const nameList = separated.map(s => "`" + s + "`").join("、") || "（空）";
     if (cfg._localConfigLoaded) {
         dv.paragraph(
-            `> [!success]- 🧩 项目分组来源：本地私人配置 lib_config_local.js（点击展开）\n` +
-            `> 检测到 javascript/ 目录存在 **lib_config_local.js**，本报告的「重点项目 vs 其他项目」分组使用该文件里的 SEPARATE_PROJECTS 名单（${separated.length} 个关键词）。\n` +
-            `> 此文件只存在于本 vault，不会被同步进公开 repo；修改它后**无需重启**，重新打开本报表即生效。`
+            `> [!success]- 🧩 项目分组来源：本地私人配置 ${localLink}（点击展开）\n` +
+            `> 检测到 javascript/ 目录存在 ${localLink}，本报告的「重点项目 vs 其他项目」分组使用该文件里的 SEPARATE_PROJECTS 名单（${separated.length} 个关键词）：\n` +
+            `> ${nameList}\n` +
+            `> 名单不合适？点击上面的 ${localLink} 直接跳进去修改，保存后重新打开本报表即生效（**无需重启**）。\n` +
+            `> 此文件只存在于本 vault，不会被同步进公开 repo。`
         );
     } else {
         dv.paragraph(
             `> [!warning]- 🧩 项目分组来源：默认配置（未找到 lib_config_local.js，点击展开）\n` +
-            `> 当前使用 lib_config.js 内置名单（${separated.length} 个关键词：${separated.map(s => "`" + s + "`").join("、") || "空"}）。\n` +
+            `> 当前使用 lib_config.js 内置名单（${separated.length} 个关键词：${nameList}）。\n` +
             `> 若这些是演示占位名，**所有项目会全部归入「Main / Work Projects (其他项目)」一组**，看不到个人/主业分组。\n` +
-            `> 补救：在 javascript/ 目录创建 lib_config_local.js，写入你自己的 SEPARATE_PROJECTS 名单（写法见 Journal/README.md），重新打开报表即生效，无需重启。`
+            `> 补救：在 javascript/ 目录创建 lib_config_local.js，写入你自己的 SEPARATE_PROJECTS 名单（写法见 ${readmeLink}），重新打开报表即生效，无需重启。`
         );
     }
 }
