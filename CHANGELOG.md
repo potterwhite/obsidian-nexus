@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.1](https://github.com/potterwhite/obsidian-nexus/compare/v0.8.0...v0.8.1) (2026-10-19)
+
+
+### 🐛 Fixed
+
+* known-issues cleanup — config override, period review, rollup reports ([#24](https://github.com/potterwhite/obsidian-nexus/issues/24)) ([1d15399](https://github.com/potterwhite/obsidian-nexus/commit/1d153995874a6fe47b75f8a0bf563ce8c30705d8))
+
 ## [0.8.0](https://github.com/potterwhite/obsidian-nexus/compare/v0.7.0...v0.8.0) (2026-09-11)
 
 
